@@ -59,7 +59,9 @@ class ShabbatModeApp extends Application.AppBase {
                 _logger.info("First run detected, showing welcome experience");
             }
 
-            // Step 6: Set application as fully initialized
+            // Step 6: Set application as fully initialized.
+            // Screen refresh is driven by the 1-second Timer started in MainView.onShow()
+            // so no TimeService.start() call is required here.
             _initialized = true;
             _appState = :running;
             _initializationStep = 6;

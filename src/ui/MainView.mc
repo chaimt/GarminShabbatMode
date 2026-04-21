@@ -2,62 +2,76 @@ using Toybox.WatchUi;
 using Toybox.Graphics;
 using Toybox.Lang;
 using Toybox.System;
+using Toybox.Timer;
 using Toybox.Application;
 
 class MainView extends WatchUi.View {
 
     private var _configService as ConfigService?;
+    private var _shabbatService as ShabbatWindowService?;
     private var _logger as Logger?;
     private var _components as Lang.Array<BaseComponent>;
     private var _appNameComponent as TextComponent?;
-    private var _statusComponent as TextComponent?;
     private var _timeComponent as TextComponent?;
+    private var _statusComponent as TextComponent?;
+    private var _updateTimer as Timer.Timer?;
     private var _initialized as Lang.Boolean;
 
     function initialize() {
         View.initialize();
         _components = [] as Lang.Array<BaseComponent>;
         _initialized = false;
+        _updateTimer = null;
 
         try {
-            // Initialize services
             _configService = new ConfigService();
             _configService.initializeService();
 
             _logger = new Logger();
             _logger.info("MainView initializing");
 
+            _shabbatService = new ShabbatWindowService();
+
             _initialized = true;
 
         } catch (ex instanceof Lang.Exception) {
             _initialized = false;
-            // Fallback error handling if logger isn't available
             System.println("MainView initialization failed: " + ex.getErrorMessage());
         }
     }
 
-    // Called when this View is brought to the foreground
+    // Called when this View is brought to the foreground – start 1-second refresh timer.
     function onShow() as Void {
         if (_logger != null) {
             _logger.debug("MainView onShow");
         }
+        if (_updateTimer == null) {
+            _updateTimer = new Timer.Timer();
+        }
+        _updateTimer.start(method(:onTimerTick), 1000, true);
     }
 
-    // Called when this View is removed from the screen
+    // Called when this View leaves the screen – stop the timer to save battery.
     function onHide() as Void {
         if (_logger != null) {
             _logger.debug("MainView onHide");
         }
+        if (_updateTimer != null) {
+            _updateTimer.stop();
+        }
     }
 
-    // Update the view
+    // Timer callback: simply request a redraw each second.
+    function onTimerTick() as Void {
+        WatchUi.requestUpdate();
+    }
+
+    // Redraw the screen.
     function onUpdate(dc as Graphics.Dc) as Void {
         try {
-            // Get device dimensions
             var width = dc.getWidth();
             var height = dc.getHeight();
 
-            // Clear the screen
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
             dc.clear();
 
@@ -66,20 +80,21 @@ class MainView extends WatchUi.View {
                 return;
             }
 
-            // Setup components if not already done
             if (_components.size() == 0) {
                 setupComponents(width, height);
             }
 
-            // Draw all components
+            // Determine mode and update component text/colours accordingly.
+            if (_shabbatService != null && _shabbatService.isShabbat()) {
+                updateShabbatDisplay();
+            } else {
+                updateCountdownDisplay();
+            }
+
             for (var i = 0; i < _components.size(); i++) {
                 _components[i].draw(dc);
             }
 
-            // Update time display
-            updateTimeDisplay();
-
-            // Show first run message if this is the first time
             if (_configService != null && _configService.isFirstRun()) {
                 drawFirstRunMessage(dc, width, height);
             }
@@ -92,43 +107,34 @@ class MainView extends WatchUi.View {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Layout setup (called once when components are first needed)
+    // -------------------------------------------------------------------------
+
     private function setupComponents(screenWidth as Lang.Number, screenHeight as Lang.Number) as Void {
         try {
-            // Calculate layout dimensions
-            var topY = screenHeight / 6;
+            var topY    = screenHeight / 6;
             var middleY = screenHeight / 2;
             var bottomY = screenHeight * 2 / 3;
 
-            // App name component (top)
             var appName = "ShabbatMode";
             if (_configService != null) {
                 appName = _configService.getAppName();
             }
 
-            _appNameComponent = new TextComponent(
-                0, topY - 20, screenWidth, 40, appName
-            );
+            _appNameComponent = new TextComponent(0, topY - 20, screenWidth, 40, appName);
             _appNameComponent.setTextColor(Graphics.COLOR_WHITE);
-            _appNameComponent.setFont(Graphics.FONT_LARGE);
+            _appNameComponent.setFont(Graphics.FONT_MEDIUM);
             _components.add(_appNameComponent);
 
-            // Current time component (center)
-            _timeComponent = new TextComponent(
-                0, middleY - 20, screenWidth, 40, "00:00:00"
-            );
-            _timeComponent.setTextColor(Graphics.COLOR_LT_GRAY);
+            _timeComponent = new TextComponent(0, middleY - 24, screenWidth, 48, "00:00:00");
+            _timeComponent.setTextColor(Graphics.COLOR_WHITE);
             _timeComponent.setFont(Graphics.FONT_LARGE);
             _components.add(_timeComponent);
 
-            // Status component (bottom)
-            var statusText = _initialized ? "Ready" : "Error";
-            _statusComponent = new TextComponent(
-                0, bottomY - 15, screenWidth, 30, statusText
-            );
-            _statusComponent.setTextColor(
-                _initialized ? Graphics.COLOR_GREEN : Graphics.COLOR_RED
-            );
-            _statusComponent.setFont(Graphics.FONT_MEDIUM);
+            _statusComponent = new TextComponent(0, bottomY - 15, screenWidth, 30, "");
+            _statusComponent.setTextColor(Graphics.COLOR_LT_GRAY);
+            _statusComponent.setFont(Graphics.FONT_SMALL);
             _components.add(_statusComponent);
 
             if (_logger != null) {
@@ -142,36 +148,83 @@ class MainView extends WatchUi.View {
         }
     }
 
-    private function updateTimeDisplay() as Void {
-        if (_timeComponent == null) {
-            return;
+    // -------------------------------------------------------------------------
+    // Display modes
+    // -------------------------------------------------------------------------
+
+    // Shabbat is active: show the current time prominently.
+    private function updateShabbatDisplay() as Void {
+        if (_appNameComponent != null) {
+            _appNameComponent.setText("Shabbat");
+            _appNameComponent.setTextColor(Graphics.COLOR_YELLOW);
         }
 
-        try {
+        if (_timeComponent != null) {
             var clockTime = System.getClockTime();
             var timeString = Lang.format("$1$:$2$:$3$", [
                 clockTime.hour.format("%02d"),
                 clockTime.min.format("%02d"),
                 clockTime.sec.format("%02d")
             ]);
-
             _timeComponent.setText(timeString);
+            _timeComponent.setTextColor(Graphics.COLOR_WHITE);
+        }
 
-        } catch (ex instanceof Lang.Exception) {
-            if (_logger != null) {
-                _logger.error("Error updating time display: " + ex.getErrorMessage());
+        // Show when Shabbat ends (only on Saturday)
+        if (_statusComponent != null) {
+            if (_shabbatService != null) {
+                var endsAt = _shabbatService.getNightfallTimeString();
+                _statusComponent.setText("Ends " + endsAt);
+            } else {
+                _statusComponent.setText("");
             }
-            _timeComponent.setText("--:--:--");
+            _statusComponent.setTextColor(Graphics.COLOR_LT_GRAY);
         }
     }
 
+    // Shabbat is not active: show countdown to the next Shabbat.
+    private function updateCountdownDisplay() as Void {
+        if (_appNameComponent != null) {
+            _appNameComponent.setText("ShabbatMode");
+            _appNameComponent.setTextColor(Graphics.COLOR_WHITE);
+        }
+
+        if (_timeComponent != null) {
+            var countdown = "";
+            if (_shabbatService != null) {
+                countdown = _shabbatService.getFormattedCountdown();
+            }
+            if (countdown.equals("")) {
+                // Fallback: just show current time
+                var clockTime = System.getClockTime();
+                countdown = Lang.format("$1$:$2$", [
+                    clockTime.hour.format("%02d"),
+                    clockTime.min.format("%02d")
+                ]);
+            }
+            _timeComponent.setText(countdown);
+            _timeComponent.setTextColor(Graphics.COLOR_YELLOW);
+        }
+
+        if (_statusComponent != null) {
+            var statusText = "until Shabbat";
+            if (_shabbatService != null && !_shabbatService.hasLocation()) {
+                statusText = "No location set";
+            }
+            _statusComponent.setText(statusText);
+            _statusComponent.setTextColor(Graphics.COLOR_LT_GRAY);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Overlay screens
+    // -------------------------------------------------------------------------
+
     private function drawFirstRunMessage(dc as Graphics.Dc, width as Lang.Number, height as Lang.Number) as Void {
         try {
-            // Draw semi-transparent overlay
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
             dc.fillRectangle(0, height * 3 / 4, width, height / 4);
 
-            // Draw welcome message
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 width / 2,
@@ -180,19 +233,16 @@ class MainView extends WatchUi.View {
                 "Welcome! Press SELECT to continue",
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
-
         } catch (ex instanceof Lang.Exception) {
-            // Ignore errors in first run message display
+            // Ignore errors in first-run overlay
         }
     }
 
     private function drawErrorScreen(dc as Graphics.Dc, width as Lang.Number, height as Lang.Number) as Void {
         try {
-            // Clear screen with error background
             dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_DK_RED);
             dc.clear();
 
-            // Draw error message
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 width / 2,
@@ -220,13 +270,15 @@ class MainView extends WatchUi.View {
             );
 
         } catch (ex instanceof Lang.Exception) {
-            // If even error screen fails, just clear to black
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
             dc.clear();
         }
     }
 
-    // Handle first run completion
+    // -------------------------------------------------------------------------
+    // Public helpers
+    // -------------------------------------------------------------------------
+
     function handleFirstRunComplete() as Void {
         if (_configService != null) {
             _configService.setFirstRunComplete();
@@ -236,7 +288,6 @@ class MainView extends WatchUi.View {
         }
     }
 
-    // Update status message
     function setStatus(status as Lang.String) as Void {
         if (_statusComponent != null) {
             _statusComponent.setText(status);
@@ -251,7 +302,6 @@ class MainView extends WatchUi.View {
         }
     }
 
-    // Getters for testing/debugging
     function isInitialized() as Lang.Boolean {
         return _initialized;
     }
@@ -283,14 +333,10 @@ class MainViewDelegate extends WatchUi.BehaviorDelegate {
                 var configService = _view.getConfigService();
                 if (configService != null && configService.isFirstRun()) {
                     _view.handleFirstRunComplete();
-                    _view.setStatus("Ready");
-                    _view.setStatusColor(Graphics.COLOR_GREEN);
                     WatchUi.requestUpdate();
                     return true;
                 }
             }
-
-            // For normal operation, this could open a menu or perform other actions
             return true;
 
         } catch (ex instanceof Lang.Exception) {
@@ -302,14 +348,11 @@ class MainViewDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onBack() as Lang.Boolean {
-        // On the main view, back button might exit the app or do nothing
-        // For now, let the system handle it
         return false;
     }
 
     function onMenu() as Lang.Boolean {
         try {
-            // Future: Open settings menu
             if (_logger != null) {
                 _logger.debug("Menu button pressed - settings not implemented yet");
             }
