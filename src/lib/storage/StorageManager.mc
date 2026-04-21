@@ -3,8 +3,8 @@ using Toybox.Lang;
 
 class StorageManager {
 
-    private var _initialized as Boolean;
-    private var _storageKeys as Dictionary<String, Object>;
+    private var _initialized as Lang.Boolean;
+    private var _storageKeys as Lang.Dictionary<Lang.String, Lang.Object>;
 
     // Storage key constants
     static const USER_SETTINGS = "user_settings";
@@ -14,7 +14,7 @@ class StorageManager {
 
     function initialize() {
         _initialized = false;
-        _storageKeys = {} as Dictionary<String, Object>;
+        _storageKeys = {} as Lang.Dictionary<Lang.String, Lang.Object>;
 
         try {
             // Initialize default storage structure if needed
@@ -24,100 +24,100 @@ class StorageManager {
 
             _initialized = true;
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             // Handle storage initialization errors
             _initialized = false;
         }
     }
 
-    function isInitialized() as Boolean {
+    function isInitialized() as Lang.Boolean {
         return _initialized;
     }
 
     // Generic storage operations
-    function setValue(key as String, value as Object?) as Boolean {
+    function setValue(key as Lang.String, value as Lang.Object?) as Lang.Boolean {
         try {
             Application.Storage.setValue(key, value);
             _storageKeys.put(key, true);
             return true;
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             return false;
         }
     }
 
-    function getValue(key as String) as Object? {
+    function getValue(key as Lang.String) as Lang.Object? {
         try {
             return Application.Storage.getValue(key);
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             return null;
         }
     }
 
-    function deleteValue(key as String) as Boolean {
+    function deleteValue(key as Lang.String) as Lang.Boolean {
         try {
             Application.Storage.deleteValue(key);
             _storageKeys.remove(key);
             return true;
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             return false;
         }
     }
 
-    function clearAll() as Boolean {
+    function clearAll() as Lang.Boolean {
         try {
             Application.Storage.clearValues();
-            _storageKeys = {} as Dictionary<String, Object>;
+            _storageKeys = {} as Lang.Dictionary<Lang.String, Lang.Object>;
             return true;
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             return false;
         }
     }
 
     // Specialized storage methods
-    function saveUserSettings(settings as Dictionary<String, Object>) as Boolean {
+    function saveUserSettings(settings as Lang.Dictionary<Lang.String, Lang.Object>) as Lang.Boolean {
         return setValue(USER_SETTINGS, settings);
     }
 
-    function getUserSettings() as Dictionary<String, Object>? {
+    function getUserSettings() as Lang.Dictionary<Lang.String, Lang.Object>? {
         var settings = getValue(USER_SETTINGS);
         if (settings instanceof Dictionary) {
-            return settings as Dictionary<String, Object>;
+            return settings as Lang.Dictionary<Lang.String, Lang.Object>;
         }
         return getDefaultSettings();
     }
 
-    function saveAppState(state as Dictionary<String, Object>) as Boolean {
+    function saveAppState(state as Lang.Dictionary<Lang.String, Lang.Object>) as Lang.Boolean {
         return setValue(APP_STATE, state);
     }
 
-    function getAppState() as Dictionary<String, Object>? {
+    function getAppState() as Lang.Dictionary<Lang.String, Lang.Object>? {
         var state = getValue(APP_STATE);
         if (state instanceof Dictionary) {
-            return state as Dictionary<String, Object>;
+            return state as Lang.Dictionary<Lang.String, Lang.Object>;
         }
         return null;
     }
 
-    function saveLastLocation(location as Dictionary<String, Object>) as Boolean {
+    function saveLastLocation(location as Lang.Dictionary<Lang.String, Lang.Object>) as Lang.Boolean {
         return setValue(LAST_LOCATION, location);
     }
 
-    function getLastLocation() as Dictionary<String, Object>? {
+    function getLastLocation() as Lang.Dictionary<Lang.String, Lang.Object>? {
         var location = getValue(LAST_LOCATION);
         if (location instanceof Dictionary) {
-            return location as Dictionary<String, Object>;
+            return location as Lang.Dictionary<Lang.String, Lang.Object>;
         }
         return null;
     }
 
     // Default configurations
-    private function getDefaultSettings() as Dictionary<String, Object> {
+    private function getDefaultSettings() as Lang.Dictionary<Lang.String, Lang.Object> {
         return {
             "theme" => "dark",
             "language" => "english",
             "units" => "metric",
             "notifications" => true,
             "auto_save" => true
-        } as Dictionary<String, Object>;
+        } as Lang.Dictionary<Lang.String, Lang.Object>;
     }
 }

@@ -19,81 +19,60 @@ Implement comprehensive time display functionality for Shabbat observance, inclu
 **Constraints**: Limited floating-point precision, memory efficient calculations, battery-conscious GPS usage  
 **Scale/Scope**: Real-time time display, daily astronomical calculations, configurable preferences
 
-## Constitution Check
-
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-[Gates will be determined based on constitution file review]
-
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
 specs/003-shabbat-time-display/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+├── plan.md              # This file
+├── spec.md              # Feature specification
+├── tasks.md             # Implementation tasks and progress
+└── context.md           # Feature context and directives
 ```
 
-### Source Code Enhancement (repository root)
+### Source Code (planned additions to existing structure)
+
+Files already exist from base application (001):
+- `src/models/TimeInfo.mc`, `Location.mc`, `TimeConfiguration.mc`
+- `src/services/TimeService.mc`
+
+New files to be created:
 
 ```text
 src/
 ├── models/
-│   ├── TimeInfo.mc             # Current time with timezone data
-│   ├── Location.mc             # Geographic coordinates and location data
-│   ├── AstronomicalData.mc     # Sunrise/sunset calculations
-│   ├── ShabbatTimes.mc         # Candle lighting and end of Shabbat times
-│   └── TimeConfiguration.mc    # User preferences for time calculations
+│   ├── AstronomicalData.mc     # Sunrise/sunset calculation results
+│   └── ShabbatTimes.mc         # Candle lighting and end of Shabbat times
 ├── services/
-│   ├── TimeService.mc          # Real-time clock and time management
 │   ├── LocationService.mc      # GPS and location acquisition
 │   ├── AstronomicalService.mc  # Sunrise/sunset calculations
 │   ├── ShabbatTimeService.mc   # Shabbat-specific time calculations
 │   └── TimezoneService.mc      # Timezone handling and conversions
 ├── ui/
 │   ├── TimeDisplayView.mc      # Main time display interface
-│   ├── components/             # Time display UI components
-│   │   ├── ClockComponent.mc   # Current time display
-│   │   ├── SunTimesComponent.mc # Sunrise/sunset display
-│   │   └── ShabbatTimesComponent.mc # Candle lighting/end times display
-│   └── TimeSettingsView.mc     # Time preferences configuration
+│   ├── TimeSettingsView.mc     # Time preferences configuration
+│   └── components/
+│       ├── ClockComponent.mc   # Current time display
+│       ├── SunTimesComponent.mc # Sunrise/sunset display
+│       └── ShabbatTimesComponent.mc # Candle lighting/end times display
 ├── lib/
-│   ├── calculations/           # Mathematical calculation utilities
+│   ├── calculations/
 │   │   ├── SunPosition.mc      # Solar position algorithms
 │   │   ├── TimeZoneUtils.mc    # Timezone conversion utilities
 │   │   └── DateMath.mc         # Date/time mathematical operations
-│   ├── formatters/             # Time display formatting
+│   ├── formatters/
 │   │   ├── TimeFormatter.mc    # Time string formatting
 │   │   └── DateFormatter.mc    # Date string formatting
-│   └── validators/             # Data validation
+│   └── validators/
 │       ├── LocationValidator.mc # GPS coordinate validation
 │       └── TimeValidator.mc    # Time calculation validation
-└── cache/                      # Caching for performance
+└── cache/
     ├── LocationCache.mc        # Cached location data
     └── CalculationCache.mc     # Cached astronomical calculations
-
-resources/
-├── layouts/
-│   ├── time_display_layout.xml # Main time display layout
-│   └── time_settings_layout.xml # Time preferences layout
-├── strings/
-│   ├── time_strings.xml        # Time-related text strings
-│   └── shabbat_strings.xml     # Shabbat-specific strings
-└── images/
-    └── time/                   # Time-related icons and graphics
-        ├── clock_icons/        # Clock and time icons
-        ├── sun_icons/          # Sunrise/sunset icons
-        └── shabbat_icons/      # Candle and Shabbat icons
-
-manifest.xml                    # Updated with location permissions
 ```
 
-**Structure Decision**: Modular architecture with separate services for different time calculations, cacheable data models for performance, and reusable UI components for different time displays. Uses observer pattern for real-time updates.
+**Structure Decision**: Modular architecture with separate services for different time calculations, cacheable data models for performance, and reusable UI components for different time displays.
 
 ## Dependencies
 

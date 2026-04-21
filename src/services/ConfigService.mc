@@ -5,7 +5,7 @@ class ConfigService {
     private var _configuration as Configuration;
     private var _storageManager as StorageManager;
     private var _logger as Logger;
-    private var _isInitialized as Boolean;
+    private var _isInitialized as Lang.Boolean;
 
     function initialize() {
         _configuration = new Configuration();
@@ -14,7 +14,7 @@ class ConfigService {
         _isInitialized = false;
     }
 
-    function initializeService() as Boolean {
+    function initializeService() as Lang.Boolean {
         try {
             // Initialize storage manager first
             _storageManager.initialize();
@@ -32,19 +32,19 @@ class ConfigService {
                 return true; // Still successful, just using defaults
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _logger.error("Failed to initialize ConfigService: " + ex.getErrorMessage());
             _isInitialized = false;
             return false;
         }
     }
 
-    function isInitialized() as Boolean {
+    function isInitialized() as Lang.Boolean {
         return _isInitialized;
     }
 
     // Configuration loading and saving
-    function loadConfiguration() as Boolean {
+    function loadConfiguration() as Lang.Boolean {
         try {
             var savedSettings = _storageManager.getUserSettings();
 
@@ -62,13 +62,13 @@ class ConfigService {
                 return false;
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _logger.error("Error loading configuration: " + ex.getErrorMessage());
             return false;
         }
     }
 
-    function saveConfiguration() as Boolean {
+    function saveConfiguration() as Lang.Boolean {
         if (!_isInitialized) {
             _logger.error("ConfigService not initialized, cannot save");
             return false;
@@ -92,13 +92,13 @@ class ConfigService {
                 return true; // Not dirty, so "successful" save
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _logger.error("Error saving configuration: " + ex.getErrorMessage());
             return false;
         }
     }
 
-    function autoSave() as Boolean {
+    function autoSave() as Lang.Boolean {
         if (_configuration.getBoolean("auto_save", true)) {
             return saveConfiguration();
         }
@@ -106,14 +106,14 @@ class ConfigService {
     }
 
     // Generic configuration access
-    function get(key as String) as Object? {
+    function get(key as Lang.String) as Lang.Object? {
         if (!_isInitialized) {
             return null;
         }
         return _configuration.get(key);
     }
 
-    function set(key as String, value as Object) as Boolean {
+    function set(key as Lang.String, value as Lang.Object) as Lang.Boolean {
         if (!_isInitialized) {
             return false;
         }
@@ -125,14 +125,14 @@ class ConfigService {
         return success;
     }
 
-    function has(key as String) as Boolean {
+    function containsKey(key as Lang.String) as Lang.Boolean {
         if (!_isInitialized) {
             return false;
         }
-        return _configuration.has(key);
+        return _configuration.containsKey(key);
     }
 
-    function remove(key as String) as Boolean {
+    function remove(key as Lang.String) as Lang.Boolean {
         if (!_isInitialized) {
             return false;
         }
@@ -145,28 +145,28 @@ class ConfigService {
     }
 
     // Typed getters with validation
-    function getString(key as String, defaultValue as String) as String {
+    function getString(key as Lang.String, defaultValue as Lang.String) as Lang.String {
         if (!_isInitialized) {
             return defaultValue;
         }
         return _configuration.getString(key, defaultValue);
     }
 
-    function getNumber(key as String, defaultValue as Number) as Number {
+    function getNumber(key as Lang.String, defaultValue as Lang.Number) as Lang.Number {
         if (!_isInitialized) {
             return defaultValue;
         }
         return _configuration.getNumber(key, defaultValue);
     }
 
-    function getBoolean(key as String, defaultValue as Boolean) as Boolean {
+    function getBoolean(key as Lang.String, defaultValue as Lang.Boolean) as Lang.Boolean {
         if (!_isInitialized) {
             return defaultValue;
         }
         return _configuration.getBoolean(key, defaultValue);
     }
 
-    function getFloat(key as String, defaultValue as Float) as Float {
+    function getFloat(key as Lang.String, defaultValue as Lang.Float) as Lang.Float {
         if (!_isInitialized) {
             return defaultValue;
         }
@@ -174,28 +174,28 @@ class ConfigService {
     }
 
     // Application-specific configuration methods
-    function getAppName() as String {
+    function getAppName() as Lang.String {
         return _configuration.getAppName();
     }
 
-    function getVersion() as String {
+    function getVersion() as Lang.String {
         return _configuration.getVersion();
     }
 
-    function isFirstRun() as Boolean {
+    function isFirstRun() as Lang.Boolean {
         return _configuration.isFirstRun();
     }
 
-    function setFirstRunComplete() as Boolean {
+    function setFirstRunComplete() as Lang.Boolean {
         _configuration.setFirstRunComplete();
         return autoSave();
     }
 
-    function getTheme() as String {
+    function getTheme() as Lang.String {
         return _configuration.getTheme();
     }
 
-    function setTheme(theme as String) as Boolean {
+    function setTheme(theme as Lang.String) as Lang.Boolean {
         // Validate theme
         if (theme.equals("light") || theme.equals("dark") || theme.equals("auto")) {
             _configuration.setTheme(theme);
@@ -206,11 +206,11 @@ class ConfigService {
         }
     }
 
-    function getLanguage() as String {
+    function getLanguage() as Lang.String {
         return _configuration.getLanguage();
     }
 
-    function setLanguage(language as String) as Boolean {
+    function setLanguage(language as Lang.String) as Lang.Boolean {
         // Basic validation - could be expanded
         if (language.length() > 0) {
             _configuration.setLanguage(language);
@@ -221,30 +221,30 @@ class ConfigService {
         }
     }
 
-    function areNotificationsEnabled() as Boolean {
+    function areNotificationsEnabled() as Lang.Boolean {
         return _configuration.areNotificationsEnabled();
     }
 
-    function setNotificationsEnabled(enabled as Boolean) as Boolean {
+    function setNotificationsEnabled(enabled as Lang.Boolean) as Lang.Boolean {
         _configuration.setNotificationsEnabled(enabled);
         return autoSave();
     }
 
-    function isVibrationEnabled() as Boolean {
+    function isVibrationEnabled() as Lang.Boolean {
         return _configuration.isVibrationEnabled();
     }
 
-    function setVibrationEnabled(enabled as Boolean) as Boolean {
+    function setVibrationEnabled(enabled as Lang.Boolean) as Lang.Boolean {
         _configuration.setVibrationEnabled(enabled);
         return autoSave();
     }
 
     // Shabbat-specific configuration
-    function getCandleLightingOffset() as Number {
+    function getCandleLightingOffset() as Lang.Number {
         return _configuration.getCandleLightingOffset();
     }
 
-    function setCandleLightingOffset(minutes as Number) as Boolean {
+    function setCandleLightingOffset(minutes as Lang.Number) as Lang.Boolean {
         // Validate offset (reasonable range)
         if (minutes >= 0 && minutes <= 60) {
             _configuration.setCandleLightingOffset(minutes);
@@ -255,11 +255,11 @@ class ConfigService {
         }
     }
 
-    function getShabbatEndOffset() as Number {
+    function getShabbatEndOffset() as Lang.Number {
         return _configuration.getShabbatEndOffset();
     }
 
-    function setShabbatEndOffset(minutes as Number) as Boolean {
+    function setShabbatEndOffset(minutes as Lang.Number) as Lang.Boolean {
         // Validate offset (reasonable range)
         if (minutes >= 0 && minutes <= 120) {
             _configuration.setShabbatEndOffset(minutes);
@@ -270,24 +270,24 @@ class ConfigService {
         }
     }
 
-    function isLocationAuto() as Boolean {
+    function isLocationAuto() as Lang.Boolean {
         return _configuration.isLocationAuto();
     }
 
-    function setLocationAuto(auto as Boolean) as Boolean {
+    function setLocationAuto(auto as Lang.Boolean) as Lang.Boolean {
         _configuration.setLocationAuto(auto);
         return autoSave();
     }
 
-    function getLatitude() as Float {
+    function getLatitude() as Lang.Float {
         return _configuration.getLatitude();
     }
 
-    function getLongitude() as Float {
+    function getLongitude() as Lang.Float {
         return _configuration.getLongitude();
     }
 
-    function setLocation(latitude as Float, longitude as Float) as Boolean {
+    function setLocation(latitude as Lang.Float, longitude as Lang.Float) as Lang.Boolean {
         // Validate coordinates
         var validationResult = Validator.validateCoordinates(latitude, longitude);
         if (Validator.isValid(validationResult)) {
@@ -300,18 +300,18 @@ class ConfigService {
     }
 
     // Configuration management
-    function resetConfiguration() as Boolean {
+    function resetConfiguration() as Lang.Boolean {
         try {
             _configuration.reset();
             _logger.info("Configuration reset to defaults");
             return saveConfiguration();
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _logger.error("Error resetting configuration: " + ex.getErrorMessage());
             return false;
         }
     }
 
-    function resetSetting(key as String) as Boolean {
+    function resetSetting(key as Lang.String) as Lang.Boolean {
         try {
             var success = _configuration.resetToDefaults(key);
             if (success) {
@@ -321,14 +321,14 @@ class ConfigService {
                 _logger.warn("Failed to reset setting: " + key);
                 return false;
             }
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _logger.error("Error resetting setting " + key + ": " + ex.getErrorMessage());
             return false;
         }
     }
 
     // Export configuration for debugging
-    function exportConfiguration() as Dictionary<String, Object>? {
+    function exportConfiguration() as Lang.Dictionary<Lang.String, Lang.Object>? {
         if (!_isInitialized) {
             return null;
         }
@@ -336,7 +336,7 @@ class ConfigService {
     }
 
     // Force save (bypass auto-save setting)
-    function forceSave() as Boolean {
+    function forceSave() as Lang.Boolean {
         if (!_isInitialized) {
             return false;
         }
@@ -354,7 +354,7 @@ class ConfigService {
                 return false;
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _logger.error("Error force saving configuration: " + ex.getErrorMessage());
             return false;
         }

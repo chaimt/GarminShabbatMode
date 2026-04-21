@@ -1,6 +1,7 @@
 using Toybox.System;
 using Toybox.Lang;
 using Toybox.Time;
+using Toybox.Time.Gregorian;
 
 class Logger {
 
@@ -10,26 +11,26 @@ class Logger {
     static const INFO = 2;
     static const DEBUG = 3;
 
-    private var _logLevel as Number;
-    private var _enabled as Boolean;
-    private var _includeTimestamp as Boolean;
-    private var _prefix as String;
+    private var _logLevel as Lang.Number;
+    private var _enabled as Lang.Boolean;
+    private var _includeTimestamp as Lang.Boolean;
+    private var _prefix as Lang.String;
 
     function initialize() {
-        _logLevel = INFO; // Default log level
+        _logLevel = INFO;
         _enabled = true;
         _includeTimestamp = true;
         _prefix = "ShabbatMode";
     }
 
-    function initialize(logLevel as Number, enabled as Boolean, includeTimestamp as Boolean, prefix as String) {
+    function configure(logLevel as Lang.Number, enabled as Lang.Boolean, includeTimestamp as Lang.Boolean, prefix as Lang.String) as Void {
         _logLevel = logLevel;
         _enabled = enabled;
         _includeTimestamp = includeTimestamp;
         _prefix = prefix;
     }
 
-    function log(message as String, level as Number) as Void {
+    function log(message as Lang.String, level as Lang.Number) as Void {
         if (!_enabled || level > _logLevel) {
             return;
         }
@@ -38,47 +39,47 @@ class Logger {
         System.println(logMessage);
     }
 
-    function error(message as String) as Void {
+    function error(message as Lang.String) as Void {
         log(message, ERROR);
     }
 
-    function warn(message as String) as Void {
+    function warn(message as Lang.String) as Void {
         log(message, WARN);
     }
 
-    function info(message as String) as Void {
+    function info(message as Lang.String) as Void {
         log(message, INFO);
     }
 
-    function debug(message as String) as Void {
+    function debug(message as Lang.String) as Void {
         log(message, DEBUG);
     }
 
-    function setLogLevel(level as Number) as Void {
+    function setLogLevel(level as Lang.Number) as Void {
         _logLevel = level;
     }
 
-    function getLogLevel() as Number {
+    function getLogLevel() as Lang.Number {
         return _logLevel;
     }
 
-    function setEnabled(enabled as Boolean) as Void {
+    function setEnabled(enabled as Lang.Boolean) as Void {
         _enabled = enabled;
     }
 
-    function isEnabled() as Boolean {
+    function isEnabled() as Lang.Boolean {
         return _enabled;
     }
 
-    function setIncludeTimestamp(include as Boolean) as Void {
+    function setIncludeTimestamp(include as Lang.Boolean) as Void {
         _includeTimestamp = include;
     }
 
-    function setPrefix(prefix as String) as Void {
+    function setPrefix(prefix as Lang.String) as Void {
         _prefix = prefix;
     }
 
-    private function formatLogMessage(message as String, level as Number) as String {
+    private function formatLogMessage(message as Lang.String, level as Lang.Number) as Lang.String {
         var levelString = getLevelString(level);
         var timestamp = "";
 
@@ -103,7 +104,7 @@ class Logger {
         ]);
     }
 
-    private function getLevelString(level as Number) as String {
+    private function getLevelString(level as Lang.Number) as Lang.String {
         switch (level) {
             case ERROR:
                 return "ERROR";

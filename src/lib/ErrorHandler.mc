@@ -12,7 +12,7 @@ class ErrorHandler {
         _storageManager = new StorageManager();
     }
 
-    function handleError(context as String, ex as Exception) as Void {
+    function handleError(context as Lang.String, ex as Lang.Exception) as Void {
         try {
             // Log the error details
             var errorMessage = Lang.format("Error in $1$: $2$", [context, ex.getErrorMessage()]);
@@ -38,14 +38,14 @@ class ErrorHandler {
             // Show user-friendly error message
             showUserError(context, ex);
 
-        } catch (handlerEx instanceof Exception) {
+        } catch (handlerEx instanceof Lang.Exception) {
             // Fallback error handling if the error handler itself fails
             System.println("CRITICAL: Error handler failed: " + handlerEx.getErrorMessage());
             showCriticalError();
         }
     }
 
-    function handleValidationError(context as String, validationResult as Number) as Void {
+    function handleValidationError(context as Lang.String, validationResult as Lang.Number) as Void {
         var errorMessage = Lang.format("Validation error in $1$: $2$", [
             context,
             Validator.getValidationErrorMessage(validationResult)
@@ -61,7 +61,7 @@ class ErrorHandler {
         showValidationError(context, validationResult);
     }
 
-    function handleStorageError(operation as String, key as String) as Void {
+    function handleStorageError(operation as Lang.String, key as Lang.String) as Void {
         var errorMessage = Lang.format("Storage error during $1$ for key: $2$", [operation, key]);
 
         if (_logger != null) {
@@ -73,7 +73,7 @@ class ErrorHandler {
         // Storage errors are usually not shown to users unless critical
     }
 
-    function handleLocationError(context as String) as Void {
+    function handleLocationError(context as Lang.String) as Void {
         var errorMessage = Lang.format("Location error in $1$", [context]);
 
         if (_logger != null) {
@@ -85,7 +85,7 @@ class ErrorHandler {
         showLocationError();
     }
 
-    function handleTimeCalculationError(calculationType as String) as Void {
+    function handleTimeCalculationError(calculationType as Lang.String) as Void {
         var errorMessage = Lang.format("Time calculation error: $1$", [calculationType]);
 
         if (_logger != null) {
@@ -97,7 +97,7 @@ class ErrorHandler {
         showTimeCalculationError(calculationType);
     }
 
-    private function showUserError(context as String, ex as Exception) as Void {
+    private function showUserError(context as Lang.String, ex as Lang.Exception) as Void {
         var message = "An error occurred. Please try again.";
 
         // Customize message based on context
@@ -113,7 +113,7 @@ class ErrorHandler {
         showAlert("Error", message);
     }
 
-    private function showValidationError(context as String, validationResult as Number) as Void {
+    private function showValidationError(context as Lang.String, validationResult as Lang.Number) as Void {
         var message = "Invalid input. Please check your entries.";
         showAlert("Invalid Input", message);
     }
@@ -123,7 +123,7 @@ class ErrorHandler {
         showAlert("Location Required", message);
     }
 
-    private function showTimeCalculationError(calculationType as String) as Void {
+    private function showTimeCalculationError(calculationType as Lang.String) as Void {
         var message = Lang.format("Unable to calculate $1$. Please check your location settings.", [calculationType]);
         showAlert("Calculation Error", message);
     }
@@ -133,29 +133,29 @@ class ErrorHandler {
         showAlert("Critical Error", message);
     }
 
-    private function showAlert(title as String, message as String) as Void {
+    private function showAlert(title as Lang.String, message as Lang.String) as Void {
         try {
             // Create and show a simple confirmation dialog
             var dialog = new WatchUi.Confirmation(message);
             WatchUi.pushView(dialog, new ConfirmationDelegate(), WatchUi.SLIDE_IMMEDIATE);
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             // If UI fails, at least print to console
             System.println(title + ": " + message);
         }
     }
 
     // Helper method to get the last error for debugging
-    function getLastError() as Dictionary<String, Object>? {
+    function getLastError() as Lang.Dictionary<Lang.String, Lang.Object>? {
         if (_storageManager != null) {
             var errorData = _storageManager.getValue("last_error");
             if (errorData instanceof Dictionary) {
-                return errorData as Dictionary<String, Object>;
+                return errorData as Lang.Dictionary<Lang.String, Lang.Object>;
             }
         }
         return null;
     }
 
-    function clearLastError() as Boolean {
+    function clearLastError() as Lang.Boolean {
         if (_storageManager != null) {
             return _storageManager.deleteValue("last_error");
         }
@@ -169,7 +169,7 @@ class ConfirmationDelegate extends WatchUi.ConfirmationDelegate {
         ConfirmationDelegate.initialize();
     }
 
-    function onResponse(response as WatchUi.Confirm) as Boolean {
+    function onResponse(response as WatchUi.Confirm) as Lang.Boolean {
         WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
         return true;
     }

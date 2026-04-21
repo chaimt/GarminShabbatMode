@@ -4,12 +4,12 @@ using Toybox.Lang;
 
 class TimeInfo {
 
-    private var _currentTime as Moment?;
-    private var _timezone as String;
-    private var _timezoneOffset as Number;
-    private var _isDST as Boolean;
-    private var _lastUpdated as Moment?;
-    private var _autoUpdate as Boolean;
+    private var _currentTime as Time.Moment?;
+    private var _timezone as Lang.String;
+    private var _timezoneOffset as Lang.Number;
+    private var _isDST as Lang.Boolean;
+    private var _lastUpdated as Time.Moment?;
+    private var _autoUpdate as Lang.Boolean;
 
     function initialize() {
         _currentTime = null;
@@ -20,7 +20,7 @@ class TimeInfo {
         _autoUpdate = true;
     }
 
-    function initialize(time as Moment, timezone as String, offset as Number) {
+    function configure(time as Time.Moment, timezone as Lang.String, offset as Lang.Number) as Void {
         _currentTime = time;
         _timezone = timezone;
         _timezoneOffset = offset;
@@ -35,12 +35,12 @@ class TimeInfo {
         _lastUpdated = _currentTime;
     }
 
-    function setCurrentTime(time as Moment) as Void {
+    function setCurrentTime(time as Time.Moment) as Void {
         _currentTime = time;
         _lastUpdated = time;
     }
 
-    function getCurrentTime() as Moment? {
+    function getCurrentTime() as Time.Moment? {
         if (_autoUpdate || _currentTime == null) {
             updateCurrentTime();
         }
@@ -48,25 +48,25 @@ class TimeInfo {
     }
 
     // Timezone management
-    function setTimezone(timezone as String, offset as Number, isDST as Boolean) as Void {
+    function setTimezone(timezone as Lang.String, offset as Lang.Number, isDST as Lang.Boolean) as Void {
         _timezone = timezone;
         _timezoneOffset = offset;
         _isDST = isDST;
     }
 
-    function getTimezone() as String {
+    function getTimezone() as Lang.String {
         return _timezone;
     }
 
-    function getTimezoneOffset() as Number {
+    function getTimezoneOffset() as Lang.Number {
         return _timezoneOffset;
     }
 
-    function isDaylightSavingTime() as Boolean {
+    function isDaylightSavingTime() as Lang.Boolean {
         return _isDST;
     }
 
-    function setDaylightSavingTime(isDST as Boolean) as Void {
+    function setDaylightSavingTime(isDST as Lang.Boolean) as Void {
         _isDST = isDST;
     }
 
@@ -79,7 +79,7 @@ class TimeInfo {
         return null;
     }
 
-    function getFormattedTime(format as Number) as String {
+    function getFormattedTime(format as Lang.Number) as Lang.String {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -88,7 +88,7 @@ class TimeInfo {
         return "--:--:--";
     }
 
-    function getFormattedDate() as String {
+    function getFormattedDate() as Lang.String {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -98,7 +98,7 @@ class TimeInfo {
     }
 
     // Time calculations
-    function addSeconds(seconds as Number) as Moment? {
+    function addSeconds(seconds as Lang.Number) as Time.Moment? {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var duration = new Time.Duration(seconds);
@@ -107,24 +107,24 @@ class TimeInfo {
         return null;
     }
 
-    function addMinutes(minutes as Number) as Moment? {
+    function addMinutes(minutes as Lang.Number) as Time.Moment? {
         return addSeconds(minutes * 60);
     }
 
-    function addHours(hours as Number) as Moment? {
+    function addHours(hours as Lang.Number) as Time.Moment? {
         return addSeconds(hours * 3600);
     }
 
-    function subtractSeconds(seconds as Number) as Moment? {
+    function subtractSeconds(seconds as Lang.Number) as Time.Moment? {
         return addSeconds(-seconds);
     }
 
-    function subtractMinutes(minutes as Number) as Moment? {
+    function subtractMinutes(minutes as Lang.Number) as Time.Moment? {
         return addSeconds(-minutes * 60);
     }
 
     // Time comparison
-    function isAfter(otherTime as Moment) as Boolean {
+    function isAfter(otherTime as Time.Moment) as Lang.Boolean {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             return currentTime.greaterThan(otherTime);
@@ -132,7 +132,7 @@ class TimeInfo {
         return false;
     }
 
-    function isBefore(otherTime as Moment) as Boolean {
+    function isBefore(otherTime as Time.Moment) as Lang.Boolean {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             return currentTime.lessThan(otherTime);
@@ -140,7 +140,7 @@ class TimeInfo {
         return false;
     }
 
-    function getDifferenceInSeconds(otherTime as Moment) as Number? {
+    function getDifferenceInSeconds(otherTime as Time.Moment) as Lang.Number? {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var duration = currentTime.subtract(otherTime);
@@ -149,7 +149,7 @@ class TimeInfo {
         return null;
     }
 
-    function getDifferenceInMinutes(otherTime as Moment) as Number? {
+    function getDifferenceInMinutes(otherTime as Time.Moment) as Lang.Number? {
         var seconds = getDifferenceInSeconds(otherTime);
         if (seconds != null) {
             return (seconds / 60).toNumber();
@@ -158,11 +158,11 @@ class TimeInfo {
     }
 
     // Time validation
-    function isValid() as Boolean {
+    function isValid() as Lang.Boolean {
         return _currentTime != null;
     }
 
-    function isStale(maxAgeSeconds as Number) as Boolean {
+    function isStale(maxAgeSeconds as Lang.Number) as Lang.Boolean {
         if (_lastUpdated == null) {
             return true;
         }
@@ -173,20 +173,20 @@ class TimeInfo {
     }
 
     // Auto-update control
-    function setAutoUpdate(autoUpdate as Boolean) as Void {
+    function setAutoUpdate(autoUpdate as Lang.Boolean) as Void {
         _autoUpdate = autoUpdate;
     }
 
-    function isAutoUpdateEnabled() as Boolean {
+    function isAutoUpdateEnabled() as Lang.Boolean {
         return _autoUpdate;
     }
 
     // State information
-    function getLastUpdated() as Moment? {
+    function getLastUpdated() as Time.Moment? {
         return _lastUpdated;
     }
 
-    function getAgeInSeconds() as Number {
+    function getAgeInSeconds() as Lang.Number {
         if (_lastUpdated != null) {
             var now = Time.now();
             return now.subtract(_lastUpdated).value();
@@ -195,7 +195,7 @@ class TimeInfo {
     }
 
     // Private helper methods
-    private function formatTimeInfo(info as Gregorian.Info, format as Number) as String {
+    private function formatTimeInfo(info as Gregorian.Info, format as Lang.Number) as Lang.String {
         // Different time format options
         switch (format) {
             case 12: // 12-hour format
@@ -226,7 +226,7 @@ class TimeInfo {
         }
     }
 
-    private function formatDateInfo(info as Gregorian.Info) as String {
+    private function formatDateInfo(info as Gregorian.Info) as Lang.String {
         return Lang.format("$1$/$2$/$3$", [
             info.day.format("%02d"),
             info.month.format("%02d"),
@@ -235,7 +235,7 @@ class TimeInfo {
     }
 
     // Create TimeInfo instances for specific moments
-    static function fromMoment(moment as Moment) as TimeInfo {
+    static function fromMoment(moment as Time.Moment) as TimeInfo {
         var timeInfo = new TimeInfo();
         timeInfo.setCurrentTime(moment);
         return timeInfo;
@@ -248,7 +248,7 @@ class TimeInfo {
     }
 
     // Export for debugging/storage
-    function toDict() as Dictionary<String, Object> {
+    function toDict() as Lang.Dictionary<Lang.String, Lang.Object> {
         return {
             "timestamp" => _currentTime != null ? _currentTime.value() : 0,
             "timezone" => _timezone,
@@ -256,6 +256,6 @@ class TimeInfo {
             "is_dst" => _isDST,
             "last_updated" => _lastUpdated != null ? _lastUpdated.value() : 0,
             "auto_update" => _autoUpdate
-        } as Dictionary<String, Object>;
+        } as Lang.Dictionary<Lang.String, Lang.Object>;
     }
 }

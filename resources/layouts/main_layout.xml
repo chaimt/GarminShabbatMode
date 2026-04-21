@@ -6,5 +6,5 @@
 
     <label id="StatusMessage" x="center" y="75%" color="Graphics.COLOR_GREEN" font="Graphics.FONT_MEDIUM" justification="Graphics.TEXT_JUSTIFY_CENTER" text="@Strings.Ready"/>
 
-    <label id="FirstRunMessage" x="center" y="85%" color="Graphics.COLOR_YELLOW" font="Graphics.FONT_SMALL" justification="Graphics.TEXT_JUSTIFY_CENTER" text="@Strings.FirstRunMessage" locY="85%"/>
+    <label id="FirstRunMessage" x="center" y="85%" color="Graphics.COLOR_YELLOW" font="Graphics.FONT_SMALL" justification="Graphics.TEXT_JUSTIFY_CENTER" text="@Strings.FirstRunMessage"/>
 </layout>

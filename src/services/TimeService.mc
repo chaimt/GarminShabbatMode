@@ -9,9 +9,9 @@ class TimeService {
     private var _timeConfiguration as TimeConfiguration;
     private var _logger as Logger?;
     private var _updateTimer as Timer.Timer?;
-    private var _isRunning as Boolean;
-    private var _updateCallbacks as Array<Method>;
-    private var _lastUpdate as Moment?;
+    private var _isRunning as Lang.Boolean;
+    private var _updateCallbacks as Lang.Array<Lang.Method>;
+    private var _lastUpdate as Time.Moment?;
 
     function initialize() {
         _timeInfo = new TimeInfo();
@@ -19,22 +19,12 @@ class TimeService {
         _logger = new Logger();
         _updateTimer = null;
         _isRunning = false;
-        _updateCallbacks = [] as Array<Method>;
-        _lastUpdate = null;
-    }
-
-    function initialize(configuration as TimeConfiguration) {
-        _timeInfo = new TimeInfo();
-        _timeConfiguration = configuration;
-        _logger = new Logger();
-        _updateTimer = null;
-        _isRunning = false;
-        _updateCallbacks = [] as Array<Method>;
+        _updateCallbacks = [] as Lang.Array<Lang.Method>;
         _lastUpdate = null;
     }
 
     // Service lifecycle
-    function start() as Boolean {
+    function start() as Lang.Boolean {
         try {
             if (_isRunning) {
                 return true; // Already running
@@ -57,7 +47,7 @@ class TimeService {
 
             return true;
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Failed to start TimeService: " + ex.getErrorMessage());
             }
@@ -78,19 +68,19 @@ class TimeService {
                 _logger.info("TimeService stopped");
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error stopping TimeService: " + ex.getErrorMessage());
             }
         }
     }
 
-    function restart() as Boolean {
+    function restart() as Lang.Boolean {
         stop();
         return start();
     }
 
-    function isRunning() as Boolean {
+    function isRunning() as Lang.Boolean {
         return _isRunning;
     }
 
@@ -109,7 +99,7 @@ class TimeService {
                 WatchUi.requestUpdate();
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error in timer update: " + ex.getErrorMessage());
             }
@@ -117,7 +107,7 @@ class TimeService {
     }
 
     // Time access methods
-    function getCurrentTime() as Moment? {
+    function getCurrentTime() as Time.Moment? {
         return _timeInfo.getCurrentTime();
     }
 
@@ -125,16 +115,16 @@ class TimeService {
         return _timeInfo;
     }
 
-    function getFormattedTime() as String {
+    function getFormattedTime() as Lang.String {
         var format = _timeConfiguration.getTimeFormat();
         return _timeInfo.getFormattedTime(format);
     }
 
-    function getFormattedDate() as String {
+    function getFormattedDate() as Lang.String {
         return _timeInfo.getFormattedDate();
     }
 
-    function getCurrentTimeString() as String {
+    function getCurrentTimeString() as Lang.String {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -155,7 +145,7 @@ class TimeService {
         return "--:--:--";
     }
 
-    function getCurrentDateString() as String {
+    function getCurrentDateString() as Lang.String {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -180,32 +170,32 @@ class TimeService {
     }
 
     // Time calculations
-    function addMinutesToCurrentTime(minutes as Number) as Moment? {
+    function addMinutesToCurrentTime(minutes as Lang.Number) as Time.Moment? {
         return _timeInfo.addMinutes(minutes);
     }
 
-    function subtractMinutesFromCurrentTime(minutes as Number) as Moment? {
+    function subtractMinutesFromCurrentTime(minutes as Lang.Number) as Time.Moment? {
         return _timeInfo.subtractMinutes(minutes);
     }
 
-    function getTimeDifferenceInMinutes(targetTime as Moment) as Number? {
+    function getTimeDifferenceInMinutes(targetTime as Time.Moment) as Lang.Number? {
         return _timeInfo.getDifferenceInMinutes(targetTime);
     }
 
-    function isCurrentTimeAfter(targetTime as Moment) as Boolean {
+    function isCurrentTimeAfter(targetTime as Time.Moment) as Lang.Boolean {
         return _timeInfo.isAfter(targetTime);
     }
 
-    function isCurrentTimeBefore(targetTime as Moment) as Boolean {
+    function isCurrentTimeBefore(targetTime as Time.Moment) as Lang.Boolean {
         return _timeInfo.isBefore(targetTime);
     }
 
     // Time zone management
-    function getCurrentTimeZone() as String {
+    function getCurrentTimeZone() as Lang.String {
         return _timeInfo.getTimezone();
     }
 
-    function setTimeZone(timezone as String, offset as Number, isDST as Boolean) as Void {
+    function setTimeZone(timezone as Lang.String, offset as Lang.Number, isDST as Lang.Boolean) as Void {
         _timeInfo.setTimezone(timezone, offset, isDST);
 
         if (_logger != null) {
@@ -213,7 +203,7 @@ class TimeService {
         }
     }
 
-    function isDaylightSavingTime() as Boolean {
+    function isDaylightSavingTime() as Lang.Boolean {
         return _timeInfo.isDaylightSavingTime();
     }
 
@@ -239,29 +229,25 @@ class TimeService {
     }
 
     // Callback management for time updates
-    function addUpdateCallback(callback as Method) as Void {
+    function addUpdateCallback(callback as Lang.Method) as Void {
         _updateCallbacks.add(callback);
     }
 
-    function removeUpdateCallback(callback as Method) as Boolean {
-        for (var i = 0; i < _updateCallbacks.size(); i++) {
-            if (_updateCallbacks[i].equals(callback)) {
-                _updateCallbacks.removeAt(i);
-                return true;
-            }
-        }
-        return false;
+    function removeUpdateCallback(callback as Lang.Method) as Lang.Boolean {
+        var sizeBefore = _updateCallbacks.size();
+        _updateCallbacks.remove(callback);
+        return _updateCallbacks.size() < sizeBefore;
     }
 
     function clearUpdateCallbacks() as Void {
-        _updateCallbacks = [] as Array<Method>;
+        _updateCallbacks = [] as Lang.Array<Lang.Method>;
     }
 
     private function notifyUpdateCallbacks() as Void {
         for (var i = 0; i < _updateCallbacks.size(); i++) {
             try {
                 _updateCallbacks[i].invoke();
-            } catch (ex instanceof Exception) {
+            } catch (ex instanceof Lang.Exception) {
                 if (_logger != null) {
                     _logger.warn("Update callback failed: " + ex.getErrorMessage());
                 }
@@ -270,15 +256,15 @@ class TimeService {
     }
 
     // Service status and diagnostics
-    function getLastUpdateTime() as Moment? {
+    function getLastUpdateTime() as Time.Moment? {
         return _lastUpdate;
     }
 
-    function getUpdateInterval() as Number {
+    function getUpdateInterval() as Lang.Number {
         return _timeConfiguration.getAutoUpdateInterval();
     }
 
-    function getTimeSinceLastUpdate() as Number? {
+    function getTimeSinceLastUpdate() as Lang.Number? {
         if (_lastUpdate != null) {
             var now = Time.now();
             return now.subtract(_lastUpdate).value();
@@ -286,7 +272,7 @@ class TimeService {
         return null;
     }
 
-    function isTimeStale(maxAgeSeconds as Number) as Boolean {
+    function isTimeStale(maxAgeSeconds as Lang.Number) as Lang.Boolean {
         var age = getTimeSinceLastUpdate();
         return (age == null || age > maxAgeSeconds);
     }
@@ -303,7 +289,7 @@ class TimeService {
                 _logger.debug("TimeService force updated");
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error in force update: " + ex.getErrorMessage());
             }
@@ -311,7 +297,7 @@ class TimeService {
     }
 
     // Time formatting helpers
-    function formatTimeWithFormat(time as Moment, format as Number) as String {
+    function formatTimeWithFormat(time as Time.Moment, format as Lang.Number) as Lang.String {
         var info = Gregorian.info(time, Time.FORMAT_SHORT);
 
         switch (format) {
@@ -360,11 +346,11 @@ class TimeService {
     }
 
     // Utility methods
-    function isValidTime(time as Moment?) as Boolean {
+    function isValidTime(time as Time.Moment?) as Lang.Boolean {
         return time != null;
     }
 
-    function getCurrentHour() as Number {
+    function getCurrentHour() as Lang.Number {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -373,7 +359,7 @@ class TimeService {
         return -1;
     }
 
-    function getCurrentMinute() as Number {
+    function getCurrentMinute() as Lang.Number {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -382,7 +368,7 @@ class TimeService {
         return -1;
     }
 
-    function getCurrentSecond() as Number {
+    function getCurrentSecond() as Lang.Number {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -391,7 +377,7 @@ class TimeService {
         return -1;
     }
 
-    function getTodayMidnight() as Moment? {
+    function getTodayMidnight() as Time.Moment? {
         var currentTime = getCurrentTime();
         if (currentTime != null) {
             var info = Gregorian.info(currentTime, Time.FORMAT_SHORT);
@@ -408,7 +394,7 @@ class TimeService {
         return null;
     }
 
-    function getTomorrowMidnight() as Moment? {
+    function getTomorrowMidnight() as Time.Moment? {
         var midnight = getTodayMidnight();
         if (midnight != null) {
             var oneDayDuration = new Time.Duration(24 * 60 * 60); // 24 hours in seconds
@@ -418,7 +404,7 @@ class TimeService {
     }
 
     // Diagnostics and debugging
-    function getServiceStatus() as Dictionary<String, Object> {
+    function getServiceStatus() as Lang.Dictionary<Lang.String, Lang.Object> {
         return {
             "is_running" => _isRunning,
             "last_update" => _lastUpdate != null ? _lastUpdate.value() : 0,
@@ -427,6 +413,6 @@ class TimeService {
             "current_time" => getCurrentTime() != null ? getCurrentTime().value() : 0,
             "timezone" => getCurrentTimeZone(),
             "is_dst" => isDaylightSavingTime()
-        } as Dictionary<String, Object>;
+        } as Lang.Dictionary<Lang.String, Lang.Object>;
     }
 }

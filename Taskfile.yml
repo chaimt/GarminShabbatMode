@@ -1,0 +1,96 @@
+version: '3'
+
+vars:
+  # Reads the active SDK path from the Connect IQ SDK manager config
+  SDK:
+    sh: cat "$HOME/Library/Application Support/Garmin/ConnectIQ/current-sdk.cfg"
+  DEV_KEY:
+    sh: echo "$HOME/.Garmin/ConnectIQ/developer_key.der"
+  APP_NAME: ShabbatMode
+  # Override at call time: task build DEVICE=fenix6
+  DEVICE: fenix7
+  BUILD_DIR: bin
+
+tasks:
+  default:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  # ── Jungle ───────────────────────────────────────────────────────────────────
+
+  jungle:
+    desc: Generate monkey.jungle (gitignored; recreated locally as needed)
+    generates:
+      - monkey.jungle
+    status:
+      - test -f monkey.jungle
+    cmds:
+      - |
+        printf 'project.manifest = manifest.xml\n' > monkey.jungle
+        printf 'devicesPath = "%s"\n' "$HOME/Library/Application Support/Garmin/ConnectIQ/Devices" >> monkey.jungle
+        printf 'base.sourcePath = src/**.mc\n' >> monkey.jungle
+        printf 'base.resourcePath = resources\n' >> monkey.jungle
+
+  # ── Build ─────────────────────────────────────────────────────────────────────
+
+  build:
+    desc: Compile the app for a target device (default DEVICE=fenix7)
+    deps: [jungle]
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - |
+        "{{.SDK}}/bin/monkeyc" \
+          -f monkey.jungle \
+          -o {{.BUILD_DIR}}/{{.APP_NAME}}.prg \
+          -d {{.DEVICE}} \
+          -y "{{.DEV_KEY}}" \
+          --warn \
+          --typecheck 0
+
+  # ── Simulator ─────────────────────────────────────────────────────────────────
+
+  simulator:
+    desc: Launch the Connect IQ simulator
+    cmds:
+      - open "{{.SDK}}/bin/ConnectIQ.app"
+
+  deploy:
+    desc: Build and send the app to the already-running simulator
+    deps: [build]
+    cmds:
+      - |
+        "{{.SDK}}/bin/monkeydo" {{.BUILD_DIR}}/{{.APP_NAME}}.prg {{.DEVICE}}
+
+  run:
+    desc: Launch simulator, build, and deploy (all-in-one)
+    cmds:
+      - task: simulator
+      - sleep 3
+      - task: deploy
+
+  # ── Tests ─────────────────────────────────────────────────────────────────────
+
+  test:
+    desc: Compile and run unit tests in the simulator
+    deps: [jungle]
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - |
+        "{{.SDK}}/bin/monkeyc" \
+          -f monkey.jungle \
+          -o {{.BUILD_DIR}}/{{.APP_NAME}}-test.prg \
+          -d {{.DEVICE}} \
+          -y "{{.DEV_KEY}}" \
+          --warn \
+          --unit-test
+      - |
+        "{{.SDK}}/bin/monkeydo" {{.BUILD_DIR}}/{{.APP_NAME}}-test.prg {{.DEVICE}}
+
+  # ── Housekeeping ──────────────────────────────────────────────────────────────
+
+  clean:
+    desc: Remove build artifacts and the generated monkey.jungle
+    cmds:
+      - rm -rf {{.BUILD_DIR}} monkey.jungle

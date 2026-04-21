@@ -2,16 +2,15 @@ using Toybox.Application;
 using Toybox.Lang;
 using Toybox.WatchUi;
 
-(:background)
 class ShabbatModeApp extends Application.AppBase {
 
-    private var _appState as Symbol;
-    private var _initialized as Boolean;
+    private var _appState as Lang.Symbol;
+    private var _initialized as Lang.Boolean;
     private var _errorHandler as ErrorHandler?;
     private var _configService as ConfigService?;
     private var _logger as Logger?;
     private var _storageManager as StorageManager?;
-    private var _initializationStep as Number;
+    private var _initializationStep as Lang.Number;
 
     function initialize() {
         AppBase.initialize();
@@ -25,7 +24,7 @@ class ShabbatModeApp extends Application.AppBase {
     }
 
     // onStart() is called on application start up
-    function onStart(state as Dictionary?) as Void {
+    function onStart(state as Lang.Dictionary?) as Void {
         try {
             _appState = :starting;
             _initializationStep = 1;
@@ -41,7 +40,7 @@ class ShabbatModeApp extends Application.AppBase {
 
             // Step 3: Initialize storage manager
             _storageManager = new StorageManager();
-            if (!_storageManager.initialize()) {
+            if (!_storageManager.isInitialized()) {
                 throw new Lang.Exception("Storage manager initialization failed");
             }
             _logger.info("Storage manager initialized");
@@ -67,7 +66,7 @@ class ShabbatModeApp extends Application.AppBase {
 
             _logger.info("Application started successfully");
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             var errorMessage = "Application start failed at step " + _initializationStep;
 
             if (_logger != null) {
@@ -86,7 +85,7 @@ class ShabbatModeApp extends Application.AppBase {
     }
 
     // onStop() is called when your application is exiting
-    function onStop(state as Dictionary?) as Void {
+    function onStop(state as Lang.Dictionary?) as Void {
         try {
             _appState = :stopping;
 
@@ -101,7 +100,7 @@ class ShabbatModeApp extends Application.AppBase {
                     if (_logger != null) {
                         _logger.debug("Configuration saved on shutdown");
                     }
-                } catch (configEx instanceof Exception) {
+                } catch (configEx instanceof Lang.Exception) {
                     if (_logger != null) {
                         _logger.warn("Failed to save configuration on shutdown: " + configEx.getErrorMessage());
                     }
@@ -117,7 +116,7 @@ class ShabbatModeApp extends Application.AppBase {
                 _logger.info("Application stopped successfully");
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             // Minimal error handling during shutdown
             _appState = :error;
             System.println("Error during application shutdown: " + ex.getErrorMessage());
@@ -125,14 +124,14 @@ class ShabbatModeApp extends Application.AppBase {
     }
 
     // Return the initial view of your application here
-    function getInitialView() as Array<Views or InputDelegates>? {
+    function getInitialView() as Lang.Array? {
         try {
             var mainView = new MainView();
             var mainViewDelegate = new MainViewDelegate(mainView);
 
-            return [ mainView, mainViewDelegate ] as Array<Views or InputDelegates>;
+            return [ mainView, mainViewDelegate ];
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Failed to create initial view: " + ex.getErrorMessage());
             }
@@ -157,7 +156,7 @@ class ShabbatModeApp extends Application.AppBase {
             // Request UI update
             WatchUi.requestUpdate();
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_errorHandler != null) {
                 _errorHandler.handleError("Settings change", ex);
             }
@@ -165,15 +164,15 @@ class ShabbatModeApp extends Application.AppBase {
     }
 
     // Application state management
-    function getState() as Symbol {
+    function getState() as Lang.Symbol {
         return _appState;
     }
 
-    function isInitialized() as Boolean {
+    function isInitialized() as Lang.Boolean {
         return _initialized;
     }
 
-    function getInitializationStep() as Number {
+    function getInitializationStep() as Lang.Number {
         return _initializationStep;
     }
 
@@ -207,7 +206,7 @@ class ShabbatModeApp extends Application.AppBase {
             // Reinitialize
             onStart(null);
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_errorHandler != null) {
                 _errorHandler.handleError("Application restart", ex);
             }
@@ -228,7 +227,7 @@ class ShabbatModeApp extends Application.AppBase {
 
             // Could implement additional memory cleanup here
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_errorHandler != null) {
                 _errorHandler.handleError("Memory warning", ex);
             }

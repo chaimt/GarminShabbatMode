@@ -2,12 +2,12 @@ using Toybox.Lang;
 
 class TimeConfiguration {
 
-    private var _settings as Dictionary<String, Object>;
-    private var _isLoaded as Boolean;
-    private var _isDirty as Boolean;
+    private var _settings as Lang.Dictionary<Lang.String, Lang.Object>;
+    private var _isLoaded as Lang.Boolean;
+    private var _isDirty as Lang.Boolean;
 
     function initialize() {
-        _settings = {} as Dictionary<String, Object>;
+        _settings = {} as Lang.Dictionary<Lang.String, Lang.Object>;
         _isLoaded = false;
         _isDirty = false;
         loadDefaults();
@@ -66,14 +66,14 @@ class TimeConfiguration {
             "notification_minutes_before" => 10, // Notify X minutes before times
             "vibration_enabled" => true,    // Vibration for notifications
             "sound_enabled" => false        // Sound for notifications (usually off for Shabbat)
-        } as Dictionary<String, Object>;
+        } as Lang.Dictionary<Lang.String, Lang.Object>;
 
         _isLoaded = true;
         _isDirty = true;
     }
 
     // Generic settings access
-    function get(key as String) as Object? {
+    function get(key as Lang.String) as Lang.Object? {
         if (!_isLoaded) {
             loadDefaults();
         }
@@ -84,7 +84,7 @@ class TimeConfiguration {
         return null;
     }
 
-    function set(key as String, value as Object) as Boolean {
+    function set(key as Lang.String, value as Lang.Object) as Lang.Boolean {
         if (!_isLoaded) {
             loadDefaults();
         }
@@ -93,84 +93,84 @@ class TimeConfiguration {
             _settings.put(key, value);
             _isDirty = true;
             return true;
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             return false;
         }
     }
 
-    function has(key as String) as Boolean {
+    function containsKey(key as Lang.String) as Lang.Boolean {
         return _settings.hasKey(key);
     }
 
     // Typed getters with validation
-    function getNumber(key as String, defaultValue as Number) as Number {
+    function getNumber(key as Lang.String, defaultValue as Lang.Number) as Lang.Number {
         var value = get(key);
         if (value instanceof Number) {
-            return value as Number;
+            return value as Lang.Number;
         }
         return defaultValue;
     }
 
-    function getFloat(key as String, defaultValue as Float) as Float {
+    function getFloat(key as Lang.String, defaultValue as Lang.Float) as Lang.Float {
         var value = get(key);
-        if (value instanceof Float) {
-            return value as Float;
+        if (value instanceof Lang.Float) {
+            return value as Lang.Float;
         }
         if (value instanceof Number) {
-            return (value as Number).toFloat();
+            return (value as Lang.Number).toFloat();
         }
         return defaultValue;
     }
 
-    function getBoolean(key as String, defaultValue as Boolean) as Boolean {
+    function getBoolean(key as Lang.String, defaultValue as Lang.Boolean) as Lang.Boolean {
         var value = get(key);
         if (value instanceof Boolean) {
-            return value as Boolean;
+            return value as Lang.Boolean;
         }
         return defaultValue;
     }
 
-    function getString(key as String, defaultValue as String) as String {
+    function getString(key as Lang.String, defaultValue as Lang.String) as Lang.String {
         var value = get(key);
         if (value instanceof String) {
-            return value as String;
+            return value as Lang.String;
         }
         return defaultValue;
     }
 
     // Time format settings
-    function getTimeFormat() as Number {
+    function getTimeFormat() as Lang.Number {
         return getNumber("time_format", 24);
     }
 
-    function setTimeFormat(format as Number) as Boolean {
+    function setTimeFormat(format as Lang.Number) as Lang.Boolean {
         if (format == 12 || format == 24) {
             return set("time_format", format);
         }
         return false;
     }
 
-    function shouldShowSeconds() as Boolean {
+    function shouldShowSeconds() as Lang.Boolean {
         return getBoolean("show_seconds", true);
     }
 
-    function setShowSeconds(show as Boolean) as Boolean {
+    function setShowSeconds(show as Lang.Boolean) as Lang.Boolean {
         return set("show_seconds", show);
     }
 
-    function shouldShowDate() as Boolean {
+    function shouldShowDate() as Lang.Boolean {
         return getBoolean("show_date", true);
     }
 
-    function setShowDate(show as Boolean) as Boolean {
+    function setShowDate(show as Lang.Boolean) as Lang.Boolean {
         return set("show_date", show);
     }
 
-    function getDateFormat() as String {
+    function getDateFormat() as Lang.String {
         return getString("date_format", "dd/mm/yyyy");
     }
 
-    function setDateFormat(format as String) as Boolean {
+    function setDateFormat(format as Lang.String) as Lang.Boolean {
         // Basic validation of date format
         if (format.length() > 0) {
             return set("date_format", format);
@@ -178,11 +178,11 @@ class TimeConfiguration {
         return false;
     }
 
-    function getAutoUpdateInterval() as Number {
+    function getAutoUpdateInterval() as Lang.Number {
         return getNumber("auto_update_interval", 1);
     }
 
-    function setAutoUpdateInterval(interval as Number) as Boolean {
+    function setAutoUpdateInterval(interval as Lang.Number) as Lang.Boolean {
         if (interval > 0 && interval <= 60) {
             return set("auto_update_interval", interval);
         }
@@ -190,57 +190,57 @@ class TimeConfiguration {
     }
 
     // Shabbat calculation settings
-    function getCandleLightingOffset() as Number {
+    function getCandleLightingOffset() as Lang.Number {
         return getNumber("candle_lighting_offset", 18);
     }
 
-    function setCandleLightingOffset(offset as Number) as Boolean {
+    function setCandleLightingOffset(offset as Lang.Number) as Lang.Boolean {
         if (offset >= 0 && offset <= 60) {
             return set("candle_lighting_offset", offset);
         }
         return false;
     }
 
-    function getShabbatEndOffset() as Number {
+    function getShabbatEndOffset() as Lang.Number {
         if (useRabbenuTam()) {
             return 72; // Fixed for Rabbenu Tam
         }
         return getNumber("shabbat_end_offset", 25);
     }
 
-    function setShabbatEndOffset(offset as Number) as Boolean {
+    function setShabbatEndOffset(offset as Lang.Number) as Lang.Boolean {
         if (offset >= 0 && offset <= 120) {
             return set("shabbat_end_offset", offset);
         }
         return false;
     }
 
-    function useRabbenuTam() as Boolean {
+    function useRabbenuTam() as Lang.Boolean {
         return getBoolean("use_rabbenu_tam", false);
     }
 
-    function setUseRabbenuTam(use as Boolean) as Boolean {
+    function setUseRabbenuTam(use as Lang.Boolean) as Lang.Boolean {
         return set("use_rabbenu_tam", use);
     }
 
     // Location settings
-    function isAutoLocationEnabled() as Boolean {
+    function isAutoLocationEnabled() as Lang.Boolean {
         return getBoolean("auto_location", true);
     }
 
-    function setAutoLocationEnabled(enabled as Boolean) as Boolean {
+    function setAutoLocationEnabled(enabled as Lang.Boolean) as Lang.Boolean {
         return set("auto_location", enabled);
     }
 
-    function getManualLatitude() as Float {
+    function getManualLatitude() as Lang.Float {
         return getFloat("manual_latitude", 0.0);
     }
 
-    function getManualLongitude() as Float {
+    function getManualLongitude() as Lang.Float {
         return getFloat("manual_longitude", 0.0);
     }
 
-    function setManualLocation(latitude as Float, longitude as Float) as Boolean {
+    function setManualLocation(latitude as Lang.Float, longitude as Lang.Float) as Lang.Boolean {
         // Validate coordinates
         if (latitude >= -90.0 && latitude <= 90.0 &&
             longitude >= -180.0 && longitude <= 180.0) {
@@ -252,30 +252,30 @@ class TimeConfiguration {
         return false;
     }
 
-    function isTimezoneAuto() as Boolean {
+    function isTimezoneAuto() as Lang.Boolean {
         return getBoolean("timezone_auto", true);
     }
 
-    function setTimezoneAuto(auto as Boolean) as Boolean {
+    function setTimezoneAuto(auto as Lang.Boolean) as Lang.Boolean {
         return set("timezone_auto", auto);
     }
 
-    function getManualTimezone() as String {
+    function getManualTimezone() as Lang.String {
         return getString("timezone_manual", "UTC");
     }
 
-    function setManualTimezone(timezone as String) as Boolean {
+    function setManualTimezone(timezone as Lang.String) as Lang.Boolean {
         if (timezone.length() > 0) {
             return set("timezone_manual", timezone);
         }
         return false;
     }
 
-    function getLocationUpdateInterval() as Number {
+    function getLocationUpdateInterval() as Lang.Number {
         return getNumber("location_update_interval", 300);
     }
 
-    function setLocationUpdateInterval(interval as Number) as Boolean {
+    function setLocationUpdateInterval(interval as Lang.Number) as Lang.Boolean {
         if (interval >= 30 && interval <= 3600) { // 30 seconds to 1 hour
             return set("location_update_interval", interval);
         }
@@ -283,38 +283,38 @@ class TimeConfiguration {
     }
 
     // Calculation preferences
-    function getCalculationMethod() as String {
+    function getCalculationMethod() as Lang.String {
         return getString("calculation_method", "standard");
     }
 
-    function setCalculationMethod(method as String) as Boolean {
+    function setCalculationMethod(method as Lang.String) as Lang.Boolean {
         if (method.equals("standard") || method.equals("accurate") || method.equals("fast")) {
             return set("calculation_method", method);
         }
         return false;
     }
 
-    function shouldUseElevationCorrection() as Boolean {
+    function shouldUseElevationCorrection() as Lang.Boolean {
         return getBoolean("elevation_correction", true);
     }
 
-    function setUseElevationCorrection(use as Boolean) as Boolean {
+    function setUseElevationCorrection(use as Lang.Boolean) as Lang.Boolean {
         return set("elevation_correction", use);
     }
 
-    function shouldUseAtmosphericRefraction() as Boolean {
+    function shouldUseAtmosphericRefraction() as Lang.Boolean {
         return getBoolean("atmospheric_refraction", true);
     }
 
-    function setUseAtmosphericRefraction(use as Boolean) as Boolean {
+    function setUseAtmosphericRefraction(use as Lang.Boolean) as Lang.Boolean {
         return set("atmospheric_refraction", use);
     }
 
-    function getPrecisionMinutes() as Number {
+    function getPrecisionMinutes() as Lang.Number {
         return getNumber("precision_minutes", 1);
     }
 
-    function setPrecisionMinutes(precision as Number) as Boolean {
+    function setPrecisionMinutes(precision as Lang.Number) as Lang.Boolean {
         if (precision >= 1 && precision <= 10) {
             return set("precision_minutes", precision);
         }
@@ -322,47 +322,47 @@ class TimeConfiguration {
     }
 
     // Cache and performance settings
-    function shouldCacheCalculations() as Boolean {
+    function shouldCacheCalculations() as Lang.Boolean {
         return getBoolean("cache_calculations", true);
     }
 
-    function setCacheCalculations(cache as Boolean) as Boolean {
+    function setCacheCalculations(cache as Lang.Boolean) as Lang.Boolean {
         return set("cache_calculations", cache);
     }
 
-    function getCacheDurationHours() as Number {
+    function getCacheDurationHours() as Lang.Number {
         return getNumber("cache_duration_hours", 24);
     }
 
-    function setCacheDurationHours(hours as Number) as Boolean {
+    function setCacheDurationHours(hours as Lang.Number) as Lang.Boolean {
         if (hours >= 1 && hours <= 168) { // 1 hour to 1 week
             return set("cache_duration_hours", hours);
         }
         return false;
     }
 
-    function shouldAllowBackgroundUpdates() as Boolean {
+    function shouldAllowBackgroundUpdates() as Lang.Boolean {
         return getBoolean("background_updates", true);
     }
 
-    function setAllowBackgroundUpdates(allow as Boolean) as Boolean {
+    function setAllowBackgroundUpdates(allow as Lang.Boolean) as Lang.Boolean {
         return set("background_updates", allow);
     }
 
-    function isLowPowerMode() as Boolean {
+    function isLowPowerMode() as Lang.Boolean {
         return getBoolean("low_power_mode", false);
     }
 
-    function setLowPowerMode(lowPower as Boolean) as Boolean {
+    function setLowPowerMode(lowPower as Lang.Boolean) as Lang.Boolean {
         return set("low_power_mode", lowPower);
     }
 
     // Regional and custom settings
-    function getRegion() as String {
+    function getRegion() as Lang.String {
         return getString("region", "standard");
     }
 
-    function setRegion(region as String) as Boolean {
+    function setRegion(region as Lang.String) as Lang.Boolean {
         if (region.equals("israel") || region.equals("diaspora") ||
             region.equals("custom") || region.equals("standard")) {
             return set("region", region);
@@ -370,11 +370,11 @@ class TimeConfiguration {
         return false;
     }
 
-    function getStringencyLevel() as String {
+    function getStringencyLevel() as Lang.String {
         return getString("stringency_level", "moderate");
     }
 
-    function setStringencyLevel(level as String) as Boolean {
+    function setStringencyLevel(level as Lang.String) as Lang.Boolean {
         if (level.equals("strict") || level.equals("moderate") || level.equals("lenient")) {
             return set("stringency_level", level);
         }
@@ -382,47 +382,47 @@ class TimeConfiguration {
     }
 
     // Notification settings
-    function areNotificationsEnabled() as Boolean {
+    function areNotificationsEnabled() as Lang.Boolean {
         return getBoolean("notification_enabled", true);
     }
 
-    function setNotificationsEnabled(enabled as Boolean) as Boolean {
+    function setNotificationsEnabled(enabled as Lang.Boolean) as Lang.Boolean {
         return set("notification_enabled", enabled);
     }
 
-    function getNotificationMinutesBefore() as Number {
+    function getNotificationMinutesBefore() as Lang.Number {
         return getNumber("notification_minutes_before", 10);
     }
 
-    function setNotificationMinutesBefore(minutes as Number) as Boolean {
+    function setNotificationMinutesBefore(minutes as Lang.Number) as Lang.Boolean {
         if (minutes >= 0 && minutes <= 60) {
             return set("notification_minutes_before", minutes);
         }
         return false;
     }
 
-    function isVibrationEnabled() as Boolean {
+    function isVibrationEnabled() as Lang.Boolean {
         return getBoolean("vibration_enabled", true);
     }
 
-    function setVibrationEnabled(enabled as Boolean) as Boolean {
+    function setVibrationEnabled(enabled as Lang.Boolean) as Lang.Boolean {
         return set("vibration_enabled", enabled);
     }
 
-    function isSoundEnabled() as Boolean {
+    function isSoundEnabled() as Lang.Boolean {
         return getBoolean("sound_enabled", false);
     }
 
-    function setSoundEnabled(enabled as Boolean) as Boolean {
+    function setSoundEnabled(enabled as Lang.Boolean) as Lang.Boolean {
         return set("sound_enabled", enabled);
     }
 
     // State management
-    function isLoaded() as Boolean {
+    function isLoaded() as Lang.Boolean {
         return _isLoaded;
     }
 
-    function isDirty() as Boolean {
+    function isDirty() as Lang.Boolean {
         return _isDirty;
     }
 
@@ -435,20 +435,20 @@ class TimeConfiguration {
     }
 
     // Export/import for storage
-    function toDict() as Dictionary<String, Object> {
+    function toDict() as Lang.Dictionary<Lang.String, Lang.Object> {
         if (!_isLoaded) {
             loadDefaults();
         }
         return _settings;
     }
 
-    function fromDict(settings as Dictionary<String, Object>) as Boolean {
+    function fromDict(settings as Lang.Dictionary<Lang.String, Lang.Object>) as Lang.Boolean {
         try {
             _settings = settings;
             _isLoaded = true;
             _isDirty = false;
             return true;
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             loadDefaults();
             return false;
         }
@@ -459,7 +459,7 @@ class TimeConfiguration {
         loadDefaults();
     }
 
-    function resetSetting(key as String) as Boolean {
+    function resetSetting(key as Lang.String) as Lang.Boolean {
         if (_settings.hasKey(key)) {
             _settings.remove(key);
             _isDirty = true;

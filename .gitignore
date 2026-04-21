@@ -1,3 +1,7 @@
+# SpecKit / Claude tooling (auto-generated, regenerable)
+.claude/
+.specify/
+
 # Garmin Connect IQ specific
 bin/
 build/

@@ -4,18 +4,18 @@ using Toybox.Lang;
 
 class BaseComponent {
 
-    private var _x as Number;
-    private var _y as Number;
-    private var _width as Number;
-    private var _height as Number;
-    private var _visible as Boolean;
-    private var _enabled as Boolean;
-    private var _backgroundColor as Number;
-    private var _textColor as Number;
-    private var _borderColor as Number;
-    private var _padding as Number;
+    private var _x as Lang.Number;
+    private var _y as Lang.Number;
+    private var _width as Lang.Number;
+    private var _height as Lang.Number;
+    private var _visible as Lang.Boolean;
+    private var _enabled as Lang.Boolean;
+    private var _backgroundColor as Lang.Number;
+    private var _textColor as Lang.Number;
+    private var _borderColor as Lang.Number;
+    private var _padding as Lang.Number;
 
-    function initialize(x as Number, y as Number, width as Number, height as Number) {
+    function initialize(x as Lang.Number, y as Lang.Number, width as Lang.Number, height as Lang.Number) {
         _x = x;
         _y = y;
         _width = width;
@@ -29,93 +29,93 @@ class BaseComponent {
     }
 
     // Position and size methods
-    function setPosition(x as Number, y as Number) as Void {
+    function setPosition(x as Lang.Number, y as Lang.Number) as Void {
         _x = x;
         _y = y;
     }
 
-    function getX() as Number {
+    function getX() as Lang.Number {
         return _x;
     }
 
-    function getY() as Number {
+    function getY() as Lang.Number {
         return _y;
     }
 
-    function setSize(width as Number, height as Number) as Void {
+    function setSize(width as Lang.Number, height as Lang.Number) as Void {
         _width = width;
         _height = height;
     }
 
-    function getWidth() as Number {
+    function getWidth() as Lang.Number {
         return _width;
     }
 
-    function getHeight() as Number {
+    function getHeight() as Lang.Number {
         return _height;
     }
 
-    function getBounds() as Dictionary<String, Number> {
+    function getBounds() as Lang.Dictionary<Lang.String, Lang.Number> {
         return {
             "x" => _x,
             "y" => _y,
             "width" => _width,
             "height" => _height
-        } as Dictionary<String, Number>;
+        } as Lang.Dictionary<Lang.String, Lang.Number>;
     }
 
     // Visibility and state methods
-    function setVisible(visible as Boolean) as Void {
+    function setVisible(visible as Lang.Boolean) as Void {
         _visible = visible;
     }
 
-    function isVisible() as Boolean {
+    function isVisible() as Lang.Boolean {
         return _visible;
     }
 
-    function setEnabled(enabled as Boolean) as Void {
+    function setEnabled(enabled as Lang.Boolean) as Void {
         _enabled = enabled;
     }
 
-    function isEnabled() as Boolean {
+    function isEnabled() as Lang.Boolean {
         return _enabled;
     }
 
     // Styling methods
-    function setBackgroundColor(color as Number) as Void {
+    function setBackgroundColor(color as Lang.Number) as Void {
         _backgroundColor = color;
     }
 
-    function getBackgroundColor() as Number {
+    function getBackgroundColor() as Lang.Number {
         return _backgroundColor;
     }
 
-    function setTextColor(color as Number) as Void {
+    function setTextColor(color as Lang.Number) as Void {
         _textColor = color;
     }
 
-    function getTextColor() as Number {
+    function getTextColor() as Lang.Number {
         return _textColor;
     }
 
-    function setBorderColor(color as Number) as Void {
+    function setBorderColor(color as Lang.Number) as Void {
         _borderColor = color;
     }
 
-    function getBorderColor() as Number {
+    function getBorderColor() as Lang.Number {
         return _borderColor;
     }
 
-    function setPadding(padding as Number) as Void {
+    function setPadding(padding as Lang.Number) as Void {
         _padding = padding;
     }
 
-    function getPadding() as Number {
+    function getPadding() as Lang.Number {
         return _padding;
     }
 
     // Hit testing
-    function containsPoint(x as Number, y as Number) as Boolean {
+    function containsPoint(x as Lang.Number, y as Lang.Number) as Lang.Boolean {
         return x >= _x && x <= (_x + _width) &&
                y >= _y && y <= (_y + _height);
     }
@@ -148,24 +148,24 @@ class BaseComponent {
     }
 
     // Event handling methods (to be overridden by subclasses)
-    function onSelect() as Boolean {
+    function onSelect() as Lang.Boolean {
         return false; // Not handled by base component
     }
 
-    function onBack() as Boolean {
+    function onBack() as Lang.Boolean {
         return false; // Not handled by base component
     }
 
-    function onNextPage() as Boolean {
+    function onNextPage() as Lang.Boolean {
         return false; // Not handled by base component
     }
 
-    function onPreviousPage() as Boolean {
+    function onPreviousPage() as Lang.Boolean {
         return false; // Not handled by base component
     }
 
     // Touch event handling (for touchscreen devices)
-    function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
+    function onTap(clickEvent as WatchUi.ClickEvent) as Lang.Boolean {
         if (!_visible || !_enabled) {
             return false;
         }
@@ -179,23 +179,23 @@ class BaseComponent {
     }
 
     // Animation support (basic)
-    private var _animationStartTime as Number?;
-    private var _animationDuration as Number;
-    private var _animationProgress as Float;
+    private var _animationStartTime as Lang.Number?;
+    private var _animationDuration as Lang.Number;
+    private var _animationProgress as Lang.Float;
 
-    function startAnimation(duration as Number) as Void {
-        _animationStartTime = System.getClockTime().timeStamp;
+    function startAnimation(duration as Lang.Number) as Void {
+        _animationStartTime = System.getTimer();
         _animationDuration = duration;
         _animationProgress = 0.0;
     }
 
-    function updateAnimation() as Boolean {
+    function updateAnimation() as Lang.Boolean {
         if (_animationStartTime == null) {
             return false;
         }
 
-        var currentTime = System.getClockTime().timeStamp;
-        var elapsed = currentTime - _animationStartTime as Number;
+        var currentTime = System.getTimer();
+        var elapsed = currentTime - _animationStartTime as Lang.Number;
 
         if (elapsed >= _animationDuration) {
             _animationProgress = 1.0;
@@ -207,11 +207,11 @@ class BaseComponent {
         return true; // Animation continuing
     }
 
-    function getAnimationProgress() as Float {
+    function getAnimationProgress() as Lang.Float {
         return _animationProgress;
     }
 
-    function isAnimating() as Boolean {
+    function isAnimating() as Lang.Boolean {
         return _animationStartTime != null;
     }
 }
@@ -219,22 +219,22 @@ class BaseComponent {
 // Text component extending base component
 class TextComponent extends BaseComponent {
 
-    private var _text as String;
+    private var _text as Lang.String;
     private var _font as Graphics.FontReference;
-    private var _justification as Number;
+    private var _justification as Lang.Number;
 
-    function initialize(x as Number, y as Number, width as Number, height as Number, text as String) {
+    function initialize(x as Lang.Number, y as Lang.Number, width as Lang.Number, height as Lang.Number, text as Lang.String) {
         BaseComponent.initialize(x, y, width, height);
         _text = text;
         _font = Graphics.FONT_MEDIUM;
         _justification = Graphics.TEXT_JUSTIFY_CENTER;
     }
 
-    function setText(text as String) as Void {
+    function setText(text as Lang.String) as Void {
         _text = text;
     }
 
-    function getText() as String {
+    function getText() as Lang.String {
         return _text;
     }
 
@@ -242,7 +242,7 @@ class TextComponent extends BaseComponent {
         _font = font;
     }
 
-    function setJustification(justification as Number) as Void {
+    function setJustification(justification as Lang.Number) as Void {
         _justification = justification;
     }
 

@@ -8,15 +8,15 @@ class MainView extends WatchUi.View {
 
     private var _configService as ConfigService?;
     private var _logger as Logger?;
-    private var _components as Array<BaseComponent>;
+    private var _components as Lang.Array<BaseComponent>;
     private var _appNameComponent as TextComponent?;
     private var _statusComponent as TextComponent?;
     private var _timeComponent as TextComponent?;
-    private var _initialized as Boolean;
+    private var _initialized as Lang.Boolean;
 
     function initialize() {
         View.initialize();
-        _components = [] as Array<BaseComponent>;
+        _components = [] as Lang.Array<BaseComponent>;
         _initialized = false;
 
         try {
@@ -29,7 +29,7 @@ class MainView extends WatchUi.View {
 
             _initialized = true;
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _initialized = false;
             // Fallback error handling if logger isn't available
             System.println("MainView initialization failed: " + ex.getErrorMessage());
@@ -84,7 +84,7 @@ class MainView extends WatchUi.View {
                 drawFirstRunMessage(dc, width, height);
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error in MainView onUpdate: " + ex.getErrorMessage());
             }
@@ -92,10 +92,9 @@ class MainView extends WatchUi.View {
         }
     }
 
-    private function setupComponents(screenWidth as Number, screenHeight as Number) as Void {
+    private function setupComponents(screenWidth as Lang.Number, screenHeight as Lang.Number) as Void {
         try {
             // Calculate layout dimensions
-            var centerX = screenWidth / 2;
             var topY = screenHeight / 6;
             var middleY = screenHeight / 2;
             var bottomY = screenHeight * 2 / 3;
@@ -136,7 +135,7 @@ class MainView extends WatchUi.View {
                 _logger.debug("MainView components setup complete");
             }
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error setting up MainView components: " + ex.getErrorMessage());
             }
@@ -158,7 +157,7 @@ class MainView extends WatchUi.View {
 
             _timeComponent.setText(timeString);
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error updating time display: " + ex.getErrorMessage());
             }
@@ -166,7 +165,7 @@ class MainView extends WatchUi.View {
         }
     }
 
-    private function drawFirstRunMessage(dc as Graphics.Dc, width as Number, height as Number) as Void {
+    private function drawFirstRunMessage(dc as Graphics.Dc, width as Lang.Number, height as Lang.Number) as Void {
         try {
             // Draw semi-transparent overlay
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
@@ -182,12 +181,12 @@ class MainView extends WatchUi.View {
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             // Ignore errors in first run message display
         }
     }
 
-    private function drawErrorScreen(dc as Graphics.Dc, width as Number, height as Number) as Void {
+    private function drawErrorScreen(dc as Graphics.Dc, width as Lang.Number, height as Lang.Number) as Void {
         try {
             // Clear screen with error background
             dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_DK_RED);
@@ -220,7 +219,7 @@ class MainView extends WatchUi.View {
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             // If even error screen fails, just clear to black
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
             dc.clear();
@@ -238,14 +237,14 @@ class MainView extends WatchUi.View {
     }
 
     // Update status message
-    function setStatus(status as String) as Void {
+    function setStatus(status as Lang.String) as Void {
         if (_statusComponent != null) {
             _statusComponent.setText(status);
             WatchUi.requestUpdate();
         }
     }
 
-    function setStatusColor(color as Number) as Void {
+    function setStatusColor(color as Lang.Number) as Void {
         if (_statusComponent != null) {
             _statusComponent.setTextColor(color);
             WatchUi.requestUpdate();
@@ -253,7 +252,7 @@ class MainView extends WatchUi.View {
     }
 
     // Getters for testing/debugging
-    function isInitialized() as Boolean {
+    function isInitialized() as Lang.Boolean {
         return _initialized;
     }
 
@@ -261,7 +260,7 @@ class MainView extends WatchUi.View {
         return _configService;
     }
 
-    function getComponentCount() as Number {
+    function getComponentCount() as Lang.Number {
         return _components.size();
     }
 }
@@ -278,7 +277,7 @@ class MainViewDelegate extends WatchUi.BehaviorDelegate {
         _logger = new Logger();
     }
 
-    function onSelect() as Boolean {
+    function onSelect() as Lang.Boolean {
         try {
             if (_view != null) {
                 var configService = _view.getConfigService();
@@ -294,7 +293,7 @@ class MainViewDelegate extends WatchUi.BehaviorDelegate {
             // For normal operation, this could open a menu or perform other actions
             return true;
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error in MainViewDelegate onSelect: " + ex.getErrorMessage());
             }
@@ -302,13 +301,13 @@ class MainViewDelegate extends WatchUi.BehaviorDelegate {
         }
     }
 
-    function onBack() as Boolean {
+    function onBack() as Lang.Boolean {
         // On the main view, back button might exit the app or do nothing
         // For now, let the system handle it
         return false;
     }
 
-    function onMenu() as Boolean {
+    function onMenu() as Lang.Boolean {
         try {
             // Future: Open settings menu
             if (_logger != null) {
@@ -316,7 +315,7 @@ class MainViewDelegate extends WatchUi.BehaviorDelegate {
             }
             return true;
 
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
                 _logger.error("Error in MainViewDelegate onMenu: " + ex.getErrorMessage());
             }

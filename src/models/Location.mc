@@ -1,18 +1,19 @@
 using Toybox.Position;
 using Toybox.Lang;
 using Toybox.Math;
+using Toybox.Time;
 
 class Location {
 
-    private var _latitude as Float;
-    private var _longitude as Float;
-    private var _altitude as Float?;
-    private var _accuracy as Number?;
-    private var _timestamp as Moment?;
-    private var _isValid as Boolean;
-    private var _source as String;
-    private var _city as String?;
-    private var _country as String?;
+    private var _latitude as Lang.Float;
+    private var _longitude as Lang.Float;
+    private var _altitude as Lang.Float?;
+    private var _accuracy as Lang.Number?;
+    private var _timestamp as Time.Moment?;
+    private var _isValid as Lang.Boolean;
+    private var _source as Lang.String;
+    private var _city as Lang.String?;
+    private var _country as Lang.String?;
 
     function initialize() {
         _latitude = 0.0;
@@ -26,32 +27,8 @@ class Location {
         _country = null;
     }
 
-    function initialize(latitude as Float, longitude as Float) {
-        _latitude = latitude;
-        _longitude = longitude;
-        _altitude = null;
-        _accuracy = null;
-        _timestamp = Time.now();
-        _isValid = validateCoordinates(latitude, longitude);
-        _source = "manual";
-        _city = null;
-        _country = null;
-    }
-
-    function initialize(latitude as Float, longitude as Float, altitude as Float, accuracy as Number) {
-        _latitude = latitude;
-        _longitude = longitude;
-        _altitude = altitude;
-        _accuracy = accuracy;
-        _timestamp = Time.now();
-        _isValid = validateCoordinates(latitude, longitude);
-        _source = "gps";
-        _city = null;
-        _country = null;
-    }
-
     // Position setters
-    function setPosition(latitude as Float, longitude as Float) as Boolean {
+    function setPosition(latitude as Lang.Float, longitude as Lang.Float) as Lang.Boolean {
         if (validateCoordinates(latitude, longitude)) {
             _latitude = latitude;
             _longitude = longitude;
@@ -62,7 +39,7 @@ class Location {
         return false;
     }
 
-    function setPositionWithAltitude(latitude as Float, longitude as Float, altitude as Float) as Boolean {
+    function setPositionWithAltitude(latitude as Lang.Float, longitude as Lang.Float, altitude as Lang.Float) as Lang.Boolean {
         var success = setPosition(latitude, longitude);
         if (success) {
             _altitude = altitude;
@@ -70,7 +47,7 @@ class Location {
         return success;
     }
 
-    function setFromPositionInfo(positionInfo as Position.Info) as Boolean {
+    function setFromPositionInfo(positionInfo as Position.Info) as Lang.Boolean {
         try {
             if (positionInfo.position != null) {
                 var pos = positionInfo.position;
@@ -93,7 +70,7 @@ class Location {
                     return true;
                 }
             }
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             _isValid = false;
         }
 
@@ -101,63 +78,63 @@ class Location {
     }
 
     // Getters
-    function getLatitude() as Float {
+    function getLatitude() as Lang.Float {
         return _latitude;
     }
 
-    function getLongitude() as Float {
+    function getLongitude() as Lang.Float {
         return _longitude;
     }
 
-    function getAltitude() as Float? {
+    function getAltitude() as Lang.Float? {
         return _altitude;
     }
 
-    function getAccuracy() as Number? {
+    function getAccuracy() as Lang.Number? {
         return _accuracy;
     }
 
-    function getTimestamp() as Moment? {
+    function getTimestamp() as Time.Moment? {
         return _timestamp;
     }
 
-    function isValid() as Boolean {
+    function isValid() as Lang.Boolean {
         return _isValid;
     }
 
-    function getSource() as String {
+    function getSource() as Lang.String {
         return _source;
     }
 
-    function setSource(source as String) as Void {
+    function setSource(source as Lang.String) as Void {
         _source = source;
     }
 
     // Location metadata
-    function getCity() as String? {
+    function getCity() as Lang.String? {
         return _city;
     }
 
-    function setCity(city as String) as Void {
+    function setCity(city as Lang.String) as Void {
         _city = city;
     }
 
-    function getCountry() as String? {
+    function getCountry() as Lang.String? {
         return _country;
     }
 
-    function setCountry(country as String) as Void {
+    function setCountry(country as Lang.String) as Void {
         _country = country;
     }
 
     // Coordinate validation
-    private function validateCoordinates(lat as Float, lon as Float) as Boolean {
+    private function validateCoordinates(lat as Lang.Float, lon as Lang.Float) as Lang.Boolean {
         return (lat >= -90.0 && lat <= 90.0 &&
                 lon >= -180.0 && lon <= 180.0);
     }
 
     // Distance calculations
-    function distanceTo(otherLocation as Location) as Float? {
+    function distanceTo(otherLocation as Location) as Lang.Float? {
         if (!_isValid || !otherLocation.isValid()) {
             return null;
         }
@@ -182,7 +159,7 @@ class Location {
         return earthRadius * c;
     }
 
-    function bearingTo(otherLocation as Location) as Float? {
+    function bearingTo(otherLocation as Location) as Lang.Float? {
         if (!_isValid || !otherLocation.isValid()) {
             return null;
         }
@@ -203,12 +180,12 @@ class Location {
     }
 
     // Location comparison
-    function isNear(otherLocation as Location, toleranceMeters as Float) as Boolean {
+    function isNear(otherLocation as Location, toleranceMeters as Lang.Float) as Lang.Boolean {
         var distance = distanceTo(otherLocation);
         return (distance != null && distance <= toleranceMeters);
     }
 
-    function equals(otherLocation as Location, precision as Float) as Boolean {
+    function equals(otherLocation as Location, precision as Lang.Float) as Lang.Boolean {
         if (!_isValid || !otherLocation.isValid()) {
             return false;
         }
@@ -220,7 +197,7 @@ class Location {
     }
 
     // Age and freshness
-    function getAgeInSeconds() as Number? {
+    function getAgeInSeconds() as Lang.Number? {
         if (_timestamp != null) {
             var now = Time.now();
             return now.subtract(_timestamp).value();
@@ -228,20 +205,20 @@ class Location {
         return null;
     }
 
-    function isStale(maxAgeSeconds as Number) as Boolean {
+    function isStale(maxAgeSeconds as Lang.Number) as Lang.Boolean {
         var age = getAgeInSeconds();
         return (age == null || age > maxAgeSeconds);
     }
 
     // Formatted output
-    function toString() as String {
+    function toString() as Lang.String {
         return Lang.format("($1$, $2$)", [
             _latitude.format("%.6f"),
             _longitude.format("%.6f")
         ]);
     }
 
-    function toDegreesMinutesString() as String {
+    function toDegreesMinutesString() as Lang.String {
         var latDeg = Math.floor(Math.abs(_latitude));
         var latMin = (Math.abs(_latitude) - latDeg) * 60.0;
         var latDir = _latitude >= 0 ? "N" : "S";
@@ -261,16 +238,16 @@ class Location {
     }
 
     // Coordinate conversion helpers
-    function toRadians() as Array<Float> {
+    function toRadians() as Lang.Array<Lang.Float> {
         return [Math.toRadians(_latitude), Math.toRadians(_longitude)];
     }
 
-    function toDegrees() as Array<Float> {
+    function toDegrees() as Lang.Array<Lang.Float> {
         return [_latitude, _longitude];
     }
 
     // Storage and serialization
-    function toDict() as Dictionary<String, Object> {
+    function toDict() as Lang.Dictionary<Lang.String, Lang.Object> {
         return {
             "latitude" => _latitude,
             "longitude" => _longitude,
@@ -281,18 +258,18 @@ class Location {
             "source" => _source,
             "city" => _city,
             "country" => _country
-        } as Dictionary<String, Object>;
+        } as Lang.Dictionary<Lang.String, Lang.Object>;
     }
 
-    function fromDict(dict as Dictionary<String, Object>) as Boolean {
+    function fromDict(dict as Lang.Dictionary<Lang.String, Lang.Object>) as Lang.Boolean {
         try {
             if (dict.hasKey("latitude") && dict.hasKey("longitude")) {
                 var lat = dict.get("latitude");
                 var lon = dict.get("longitude");
 
-                if (lat instanceof Float && lon instanceof Float) {
-                    _latitude = lat as Float;
-                    _longitude = lon as Float;
+                if (lat instanceof Lang.Float && lon instanceof Lang.Float) {
+                    _latitude = lat as Lang.Float;
+                    _longitude = lon as Lang.Float;
                     _isValid = validateCoordinates(_latitude, _longitude);
 
                     if (dict.hasKey("altitude")) {
@@ -302,10 +279,10 @@ class Location {
                         _accuracy = dict.get("accuracy");
                     }
                     if (dict.hasKey("timestamp") && dict.get("timestamp") instanceof Number) {
-                        _timestamp = new Time.Moment(dict.get("timestamp") as Number);
+                        _timestamp = new Time.Moment(dict.get("timestamp") as Lang.Number);
                     }
                     if (dict.hasKey("source")) {
-                        _source = dict.get("source") as String;
+                        _source = dict.get("source") as Lang.String;
                     }
                     if (dict.hasKey("city")) {
                         _city = dict.get("city");
@@ -317,7 +294,7 @@ class Location {
                     return true;
                 }
             }
-        } catch (ex instanceof Exception) {
+        } catch (ex instanceof Lang.Exception) {
             // Failed to parse
         }
 
@@ -325,8 +302,10 @@ class Location {
     }
 
     // Static factory methods
-    static function fromCoordinates(latitude as Float, longitude as Float) as Location {
-        return new Location(latitude, longitude);
+    static function fromCoordinates(latitude as Lang.Float, longitude as Lang.Float) as Location {
+        var loc = new Location();
+        loc.setPosition(latitude, longitude);
+        return loc;
     }
 
     static function fromGPS(positionInfo as Position.Info) as Location? {
@@ -339,14 +318,14 @@ class Location {
 
     // Common locations for testing
     static function getJerusalem() as Location {
-        return new Location(31.7683, 35.2137); // Jerusalem, Israel
+        return fromCoordinates(31.7683, 35.2137);
     }
 
     static function getNewYork() as Location {
-        return new Location(40.7128, -74.0060); // New York City, USA
+        return fromCoordinates(40.7128, -74.0060);
     }
 
     static function getLondon() as Location {
-        return new Location(51.5074, -0.1278); // London, UK
+        return fromCoordinates(51.5074, -0.1278);
     }
 }

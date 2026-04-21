@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
-    <iq:application entry="ShabbatModeApp" id="shabbatmode" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="4.0.0" name="@Strings.AppName" type="widget" version="1.0.0">
+    <iq:application entry="ShabbatModeApp" id="fefbdfbf-cbba-4fa1-9d44-862bad9f29c4" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="4.0.0" name="@Strings.AppName" type="widget" version="1.0.0">
         <iq:products>
             <!-- Support for various Garmin devices - can be expanded -->
             <iq:product id="fenix6"/>
@@ -12,8 +12,6 @@
 
         <iq:permissions>
             <iq:uses-permission id="Positioning"/>
-            <iq:uses-permission id="Storage"/>
-            <iq:uses-permission id="Background"/>
         </iq:permissions>
 
         <iq:languages>
