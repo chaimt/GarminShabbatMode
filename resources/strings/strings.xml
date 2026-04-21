@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <!-- Application Info -->
+    <string id="AppName">ShabbatMode</string>
+    <string id="AppVersion">1.0.0</string>
+    <string id="AppDescription">Garmin application for Shabbat observance</string>
+
+    <!-- Status Messages -->
+    <string id="Ready">Ready</string>
+    <string id="Loading">Loading...</string>
+    <string id="Error">Error</string>
+    <string id="Initializing">Initializing...</string>
+
+    <!-- First Run Experience -->
+    <string id="FirstRunMessage">Welcome! Press SELECT to continue</string>
+    <string id="WelcomeTitle">Welcome to ShabbatMode</string>
+    <string id="FirstRunComplete">Setup complete</string>
+
+    <!-- Time Display -->
+    <string id="CurrentTime">Current Time</string>
+    <string id="TimeFormat">HH:MM:SS</string>
+    <string id="UnknownTime">--:--:--</string>
+
+    <!-- Navigation -->
+    <string id="MenuSelect">SELECT</string>
+    <string id="MenuBack">BACK</string>
+    <string id="MenuUp">UP</string>
+    <string id="MenuDown">DOWN</string>
+
+    <!-- Error Messages -->
+    <string id="InitializationError">Initialization Error</string>
+    <string id="RestartRequired">Please restart the app</string>
+    <string id="ConfigurationError">Configuration Error</string>
+    <string id="StorageError">Storage Error</string>
+
+    <!-- Settings (for future use) -->
+    <string id="Settings">Settings</string>
+    <string id="Theme">Theme</string>
+    <string id="Language">Language</string>
+    <string id="Notifications">Notifications</string>
+
+    <!-- General UI -->
+    <string id="OK">OK</string>
+    <string id="Cancel">Cancel</string>
+    <string id="Yes">Yes</string>
+    <string id="No">No</string>
+    <string id="Save">Save</string>
+    <string id="Reset">Reset</string>
+
+    <!-- Device Integration -->
+    <string id="DeviceInfo">Device Info</string>
+    <string id="LocationRequired">Location Required</string>
+    <string id="LocationUnavailable">Location Unavailable</string>
+
+    <!-- Future Placeholders -->
+    <string id="SunriseSunset">Sunrise/Sunset</string>
+    <string id="ShabbatTimes">Shabbat Times</string>
+    <string id="CandleLighting">Candle Lighting</string>
+    <string id="ShabbatEnd">Shabbat Ends</string>
+</strings>

@@ -1,0 +1,53 @@
+installed: []
+settings:
+  auto_execute_hooks: true
+hooks:
+  before_specify:
+  - extension: product
+    command: adlc.product.specify
+    enabled: true
+    optional: true
+    prompt: Execute adlc.product.specify?
+    description: Create/verify product requirements before feature specification
+    condition: null
+  after_specify:
+  - extension: product
+    command: adlc.product.validate
+    enabled: true
+    optional: true
+    prompt: Execute adlc.product.validate?
+    description: Validate feature spec alignment with PRD (READ-ONLY)
+    condition: null
+  before_plan:
+  - extension: architect
+    command: adlc.architect.validate
+    enabled: true
+    optional: true
+    prompt: Execute adlc.architect.validate?
+    description: Validate feature aligns with architecture; escalate if new architectural
+      decisions detected
+    condition: null
+  after_plan:
+  - extension: architect
+    command: adlc.architect.validate
+    enabled: true
+    optional: true
+    prompt: Execute adlc.architect.validate?
+    description: Validate plan alignment with architecture (READ-ONLY)
+    condition: null
+  after_tasks:
+  - extension: tdd
+    command: adlc.tdd.tasks
+    enabled: true
+    optional: false
+    prompt: Execute adlc.tdd.tasks?
+    description: Generate hybrid TDD tests after tasks.md created
+    condition: null
+  after_implement:
+  - extension: tdd
+    command: adlc.tdd.implement
+    enabled: true
+    optional: false
+    prompt: Execute adlc.tdd.implement?
+    description: Execute TDD workflow after implementation completes
+    condition: null

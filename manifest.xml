@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application entry="ShabbatModeApp" id="shabbatmode" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="4.0.0" name="@Strings.AppName" type="widget" version="1.0.0">
+        <iq:products>
+            <!-- Support for various Garmin devices - can be expanded -->
+            <iq:product id="fenix6"/>
+            <iq:product id="fenix7"/>
+            <iq:product id="fr965"/>
+            <iq:product id="venu2"/>
+            <iq:product id="epix"/>
+        </iq:products>
+
+        <iq:permissions>
+            <iq:uses-permission id="Positioning"/>
+            <iq:uses-permission id="Storage"/>
+            <iq:uses-permission id="Background"/>
+        </iq:permissions>
+
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+
+        <iq:barrels>
+            <!-- No external barrels for base application -->
+        </iq:barrels>
+    </iq:application>
+</iq:manifest>
