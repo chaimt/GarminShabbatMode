@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <!-- Shabbat display labels -->
+    <string id="ShabbatModeTitle">ShabbatMode</string>
+    <string id="ShabbatActive">Shabbat</string>
+    <string id="ShabbatCountdown">until Shabbat</string>
+    <string id="CandleLightingLabel">Candles</string>
+    <string id="HavdalahLabel">Havdalah</string>
+    <string id="ShabbatEnds">Ends</string>
+    <string id="NextShabbat">Next Shabbat</string>
+
+    <!-- Settings screen -->
+    <string id="SettingsTitle">Settings</string>
+    <string id="CandleOffsetLabel">Candles before sunset</string>
+    <string id="EndOffsetLabel">Havdalah after sunset</string>
+    <string id="RabbenuTamLabel">Rabbenu Tam (72 min)</string>
+    <string id="TimeFormatLabel">Time format</string>
+    <string id="TimeFormat12h">12-hour</string>
+    <string id="TimeFormat24h">24-hour</string>
+    <string id="On">ON</string>
+    <string id="Off">OFF</string>
+
+    <!-- Regional/custom labels -->
+    <string id="MinutesBefore">min before sunset</string>
+    <string id="MinutesAfter">min after sunset</string>
+    <string id="StandardCustum">Standard (18 min)</string>
+    <string id="RabbenuTamOption">Rabbenu Tam (72 min)</string>
+
+    <!-- Error / status messages -->
+    <string id="LocationNeeded">Set location for Shabbat times</string>
+    <string id="ShabbatTimesUnavail">Times unavailable</string>
+    <string id="PolarWarning">No Shabbat times at this latitude</string>
+</strings>

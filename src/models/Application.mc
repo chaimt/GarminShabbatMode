@@ -128,18 +128,27 @@ class ShabbatModeApp extends Application.AppBase {
     // Return the initial view of your application here
     function getInitialView() as Lang.Array? {
         try {
-            var mainView = new MainView();
-            var mainViewDelegate = new MainViewDelegate(mainView);
+            var timeView = new TimeDisplayView();
+            var timeDelegate = new TimeDisplayDelegate(timeView);
 
-            return [ mainView, mainViewDelegate ];
+            return [ timeView, timeDelegate ];
 
         } catch (ex instanceof Lang.Exception) {
             if (_logger != null) {
-                _logger.error("Failed to create initial view: " + ex.getErrorMessage());
+                _logger.error("Failed to create TimeDisplayView, falling back: " + ex.getErrorMessage());
             }
 
-            // Return a simple error view if main view fails
-            return null;
+            // Fallback to original MainView if TimeDisplayView fails
+            try {
+                var mainView = new MainView();
+                var mainViewDelegate = new MainViewDelegate(mainView);
+                return [ mainView, mainViewDelegate ];
+            } catch (ex2 instanceof Lang.Exception) {
+                if (_logger != null) {
+                    _logger.error("MainView fallback also failed: " + ex2.getErrorMessage());
+                }
+                return null;
+            }
         }
     }
 

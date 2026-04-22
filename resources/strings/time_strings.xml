@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <!-- Time display labels -->
+    <string id="TimeLabel">Time</string>
+    <string id="SunriseLabel">Sunrise</string>
+    <string id="SunsetLabel">Sunset</string>
+    <string id="CandleLighting">Candles</string>
+    <string id="HavdalahLabel">Havdalah</string>
+    <string id="ShabbatActiveLabel">Shabbat</string>
+
+    <!-- Placeholders -->
+    <string id="TimeUnavailable">--:--</string>
+    <string id="NoLocation">No location</string>
+    <string id="Calculating">Calculating...</string>
+    <string id="PolarRegion">Polar region</string>
+
+    <!-- Status messages -->
+    <string id="GpsAcquiring">Acquiring GPS...</string>
+    <string id="UsingCachedLocation">Cached location</string>
+    <string id="UsingManualLocation">Manual location</string>
+    <string id="LocationError">Location error</string>
+    <string id="SunCalculationError">Calc error</string>
+</strings>
