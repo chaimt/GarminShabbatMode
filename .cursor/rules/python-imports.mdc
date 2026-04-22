@@ -1,0 +1,47 @@
+---
+description: Python import placement - all imports must be at the top of the file
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python Imports at Top of File
+
+When adding or modifying Python files, **always place import statements at the top of the file**, never inline or in the middle of the code.
+
+## Rules
+
+- All `import` and `from ... import` statements must appear at the top of the file, after the module docstring (if any) and before any other code.
+- When adding a new import needed by your changes, insert it into the existing import block at the top — do not place it near the code that uses it.
+- Follow standard Python import ordering (PEP 8):
+  1. Standard library imports
+  2. Third-party imports
+  3. Local/project imports
+- Separate each group with a blank line.
+
+## Examples
+
+```python
+# BAD - import in the middle of the file
+def process_data(raw):
+    import json
+    return json.loads(raw)
+
+# GOOD - import at the top
+import json
+
+def process_data(raw):
+    return json.loads(raw)
+```
+
+```python
+# BAD - adding a new import next to the function that needs it
+def get_timestamp():
+    from datetime import datetime
+    return datetime.now()
+
+# GOOD - adding the import to the top-level import block
+from datetime import datetime
+
+def get_timestamp():
+    return datetime.now()
+```
