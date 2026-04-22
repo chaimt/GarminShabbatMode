@@ -133,7 +133,7 @@
 
 ### Implementation for User Story 6
 
-- [ ] T022 [SYNC] [US6] Add `_loadSystemLastKnown()` private method to `src/services/LocationService.mc` — calls `Position.getInfo()` synchronously; if `posInfo != null` and `posInfo.position != null`, extracts `coords = posInfo.position.toDegrees()`, validates with `LocationValidator.isUsable(coords[0].toFloat(), coords[1].toFloat())`; if valid: sets `_lat`, `_lon`, `_hasLocation = true`, `_source = "gps_system"`, and calls `new LocationCache().save(lat, lon)` to persist for future restarts; call `_loadSystemLastKnown()` from `initialize()` after `_loadFromCache()` (system fix overwrites stale cache if it differs); skip entirely when `_isManualSourceConfigured()` is true
+- [x] T022 [SYNC] [US6] Add `_loadSystemLastKnown()` private method to `src/services/LocationService.mc` — calls `Position.getInfo()` synchronously; if `posInfo != null` and `posInfo.position != null`, extracts `coords = posInfo.position.toDegrees()`, validates with `LocationValidator.isUsable(coords[0].toFloat(), coords[1].toFloat())`; if valid: sets `_lat`, `_lon`, `_hasLocation = true`, `_source = "gps_system"`, and calls `new LocationCache().save(lat, lon)` to persist for future restarts; call `_loadSystemLastKnown()` from `initialize()` after `_loadFromCache()` (system fix overwrites stale cache if it differs); skip entirely when `_isManualSourceConfigured()` is true
 
 **Checkpoint**: US6 complete — location is available from the very first frame of the app without a visible "acquiring…" state for users who have previously obtained a GPS fix.
 
