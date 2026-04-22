@@ -1,5 +1,6 @@
 using Toybox.Graphics;
 using Toybox.Lang;
+using Toybox.WatchUi;
 
 // Displays candle-lighting and end-of-Shabbat (Havdalah) times.
 // Renders two compact labelled lines within its bounding rectangle.
@@ -64,13 +65,13 @@ class ShabbatTimesComponent extends BaseComponent {
         // Candle lighting row
         dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, candleY, _font,
-            "Candles: " + getCandleLightingString(),
+            (WatchUi.loadResource(Rez.Strings.CandleLightingLabel) as String) + ": " + getCandleLightingString(),
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // End of Shabbat row
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, endY, _font,
-            "Havdalah: " + getShabbatEndString(),
+            (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as String) + ": " + getShabbatEndString(),
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 }

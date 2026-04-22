@@ -47,7 +47,8 @@ class TimeSettingsView extends WatchUi.View {
         } catch (ex instanceof Lang.Exception) {
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             dc.drawText(_screenWidth / 2, _screenHeight / 2,
-                Graphics.FONT_SMALL, "Settings Error",
+                Graphics.FONT_SMALL,
+                WatchUi.loadResource(Rez.Strings.SettingsError) as String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
     }
@@ -92,7 +93,8 @@ class TimeSettingsView extends WatchUi.View {
     private function _drawTitle(dc as Graphics.Dc) as Void {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_screenWidth / 2, _screenHeight / 10,
-            Graphics.FONT_SMALL, "Settings",
+            Graphics.FONT_SMALL,
+            WatchUi.loadResource(Rez.Strings.SettingsTitle) as String,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -103,11 +105,17 @@ class TimeSettingsView extends WatchUi.View {
         var startY  = _screenHeight / 5;
         var rowH    = (_screenHeight - startY - _screenHeight / 10) / ITEM_COUNT;
 
+        var onStr  = WatchUi.loadResource(Rez.Strings.On)  as String;
+        var offStr = WatchUi.loadResource(Rez.Strings.Off) as String;
         var labels = [
-            Lang.format("Candles: $1$ min", [_config.getCandleLightingOffset().format("%d")]),
-            Lang.format("Shabbat end: $1$ min", [_config.getShabbatEndOffset().format("%d")]),
-            Lang.format("Rabbenu Tam: $1$", [_config.useRabbenuTam() ? "ON" : "OFF"]),
-            Lang.format("Time format: $1$h", [_config.getTimeFormat().format("%d")])
+            Lang.format(WatchUi.loadResource(Rez.Strings.CandlesSettingFormat) as String,
+                [_config.getCandleLightingOffset().format("%d")]),
+            Lang.format(WatchUi.loadResource(Rez.Strings.ShabbatEndSettingFormat) as String,
+                [_config.getShabbatEndOffset().format("%d")]),
+            Lang.format(WatchUi.loadResource(Rez.Strings.RabbenuTamSettingFormat) as String,
+                [_config.useRabbenuTam() ? onStr : offStr]),
+            Lang.format(WatchUi.loadResource(Rez.Strings.TimeFormatSettingFormat) as String,
+                [_config.getTimeFormat().format("%d")])
         ];
 
         for (var i = 0; i < ITEM_COUNT; i++) {
@@ -130,7 +138,8 @@ class TimeSettingsView extends WatchUi.View {
     private function _drawHint(dc as Graphics.Dc) as Void {
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_screenWidth / 2, _screenHeight - _screenHeight / 12,
-            Graphics.FONT_TINY, "SELECT: change  BACK: exit",
+            Graphics.FONT_TINY,
+            WatchUi.loadResource(Rez.Strings.SettingsHint) as String,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 }

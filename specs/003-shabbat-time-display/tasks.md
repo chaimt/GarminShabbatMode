@@ -174,13 +174,13 @@
 - `TimeSettingsView.mc`: "Settings Error", "Settings", "Candles: $1$ min", "Shabbat end: $1$ min", "Rabbenu Tam: $1$", "Time format: $1$h", "ON", "OFF", "SELECT: change  BACK: exit"
 - `ShabbatTimesComponent.mc`: "Candles: ", "Havdalah: "
 
-- [ ] T064 [SYNC] Audit all source files for hardcoded user-facing strings and verify mapping to resource IDs; produce a comment block in each file listing the Rez.Strings.* IDs to use — affects `src/ui/MainView.mc`, `src/ui/TimeDisplayView.mc`, `src/ui/TimeSettingsView.mc`, `src/ui/components/ShabbatTimesComponent.mc`
-- [ ] T065 [P] [ASYNC] Add missing string entries (`SettingsError`, `TimeDisplayError`, `SettingsHint`) to `resources/strings/strings.xml`
-- [ ] T066 [P] [ASYNC] Add missing format string entries (`CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`) to `resources/strings/shabbat_strings.xml`
-- [ ] T067 [SYNC] Refactor `src/ui/MainView.mc` to replace all hardcoded user-facing strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActive`, `ConservationEndsPrefix`, `ShabbatCountdown`, `LocationNeeded`, `FirstRunMessage`, `ShabbatModeTitle`, `InitializationError`, `RestartRequired`
-- [ ] T068 [P] [SYNC] Refactor `src/ui/TimeDisplayView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActiveLabel`, `CandleLightingLabel`, `HavdalahLabel`, `LocationNeeded`, `PolarWarning`, `TimeDisplayError`
-- [ ] T069 [P] [SYNC] Refactor `src/ui/TimeSettingsView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `SettingsTitle`, `SettingsError`, `SettingsHint`, `CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`, `On`, `Off`
-- [ ] T070 [P] [ASYNC] Refactor `src/ui/components/ShabbatTimesComponent.mc` to replace `"Candles: "` and `"Havdalah: "` with `WatchUi.loadResource(Rez.Strings.CandleLightingLabel)` and `WatchUi.loadResource(Rez.Strings.HavdalahLabel)` plus a colon separator
+- [x] T064 [SYNC] Audit all source files for hardcoded user-facing strings and verify mapping to resource IDs; produce a comment block in each file listing the Rez.Strings.* IDs to use — affects `src/ui/MainView.mc`, `src/ui/TimeDisplayView.mc`, `src/ui/TimeSettingsView.mc`, `src/ui/components/ShabbatTimesComponent.mc`
+- [x] T065 [P] [ASYNC] Add missing string entries (`SettingsError`, `TimeDisplayError`, `SettingsHint`) to `resources/strings/strings.xml`
+- [x] T066 [P] [ASYNC] Add missing format string entries (`CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`) to `resources/strings/shabbat_strings.xml`
+- [x] T067 [SYNC] Refactor `src/ui/MainView.mc` to replace all hardcoded user-facing strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActive`, `ConservationEndsPrefix`, `ShabbatCountdown`, `LocationNeeded`, `FirstRunMessage`, `ShabbatModeTitle`, `InitializationError`, `RestartRequired`
+- [x] T068 [P] [SYNC] Refactor `src/ui/TimeDisplayView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActiveLabel`, `CandleLightingLabel`, `HavdalahLabel`, `LocationNeeded`, `PolarWarning`, `TimeDisplayError`
+- [x] T069 [P] [SYNC] Refactor `src/ui/TimeSettingsView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `SettingsTitle`, `SettingsError`, `SettingsHint`, `CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`, `On`, `Off`
+- [x] T070 [P] [ASYNC] Refactor `src/ui/components/ShabbatTimesComponent.mc` to replace `"Candles: "` and `"Havdalah: "` with `WatchUi.loadResource(Rez.Strings.CandleLightingLabel)` and `WatchUi.loadResource(Rez.Strings.HavdalahLabel)` plus a colon separator
 
 **Checkpoint**: No user-facing string literals remain in any `.mc` source file; all display text is driven by `resources/strings/*.xml`
 
