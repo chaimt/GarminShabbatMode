@@ -24,9 +24,14 @@ class TimeConfiguration {
 
             // Shabbat time calculation settings
             "candle_lighting_offset" => 18,  // Minutes before sunset
-            "shabbat_end_offset" => 25,      // Minutes after sunset (Rabbenu Tam: 72)
-            "use_rabbenu_tam" => false,      // Use Rabbenu Tam's 72-minute opinion
-            "shabbat_end_custom" => 25,      // Custom end offset if not using Rabbenu Tam
+            "shabbat_end_offset" => 42,      // Minutes after sunset — Rabbeinu Tam (default)
+            "use_rabbenu_tam" => false,      // Use Rabbeinu Tam's strict 72-minute opinion
+            "shabbat_end_custom" => 42,      // Custom end offset if not using strict Rabbeinu Tam
+            // Tzais calculation method (FR-014):
+            //   "fixed_minutes"  — KosherJava ZmanimCalendar.getTzais()  (uses shabbat_end_offset)
+            //   "degrees_8_5"    — KosherJava getTzaisGeonim8Point5Degrees()  (zenith 98.5°)
+            //   "degrees_7_083"  — KosherJava getTzaisGeonim7Point083Degrees() (zenith 97.083°)
+            "tzais_method" => "fixed_minutes",
 
             // Location and timezone settings
             "auto_location" => true,         // Use GPS for location
@@ -221,6 +226,23 @@ class TimeConfiguration {
 
     function setUseRabbenuTam(use as Lang.Boolean) as Lang.Boolean {
         return set("use_rabbenu_tam", use);
+    }
+
+    // Tzais calculation method (FR-014).
+    // Returns one of: "fixed_minutes", "degrees_8_5", "degrees_7_083".
+    // When use_rabbenu_tam is true, returns "fixed_minutes" with shabbat_end_offset = 72.
+    function getTzaisMethod() as Lang.String {
+        if (useRabbenuTam()) {
+            return "fixed_minutes";
+        }
+        return getString("tzais_method", "fixed_minutes");
+    }
+
+    function setTzaisMethod(method as Lang.String) as Lang.Boolean {
+        if (method.equals("fixed_minutes") || method.equals("degrees_8_5") || method.equals("degrees_7_083")) {
+            return set("tzais_method", method);
+        }
+        return false;
     }
 
     // Location settings

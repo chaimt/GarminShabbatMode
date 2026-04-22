@@ -43,12 +43,14 @@ As a practicing Jewish user, I want to see the exact times for candle lighting a
 
 **Why this priority**: Core functionality for Shabbat observance - provides the specific religious times needed for proper Shabbat observance.
 
-**Independent Test**: Can be tested by verifying candle lighting time (typically 18-20 minutes before sunset) and end of Shabbat time (typically 25-42 minutes after sunset) are calculated and displayed correctly.
+**Independent Test**: Can be tested by verifying candle lighting time (18 minutes before sunset by default) and end of Shabbat time (42 minutes after sunset by default, Rabbeinu Tam) are calculated and displayed correctly.
 
 **Acceptance Scenarios**:
 
-1. **Given** sunset time is calculated, **When** I view the app on Friday, **Then** candle lighting time is displayed (typically 18-20 minutes before sunset)
-2. **Given** sunset time is calculated, **When** I view the app on Saturday evening, **Then** end of Shabbat time is displayed (typically 25-42 minutes after sunset depending on location customs)
+1. **Given** sunset time is calculated, **When** I view the app on Friday, **Then** candle lighting time is displayed (18 minutes before sunset by default)
+2. **Given** sunset time is calculated, **When** I view the app on Saturday evening, **Then** end of Shabbat time is displayed (default 42 minutes after sunset — Rabbeinu Tam; configurable by user preference)
+3. **Given** I select "Geonim 8.5°" as the end-of-Shabbat method in settings, **When** I view the app on Saturday evening, **Then** the displayed end-of-Shabbat time reflects the solar angle calculation (sun 8.5° below horizon) rather than a fixed offset, and matches KosherJava `getTzaisGeonim8Point5Degrees()` within ±2 minutes
+4. **Given** I select "Geonim 7°" as the end-of-Shabbat method in settings, **When** I view the app on Saturday evening, **Then** the displayed end-of-Shabbat time reflects the 7.083° solar angle calculation, matching KosherJava `getTzaisGeonim7Point083Degrees()` within ±2 minutes
 
 ---
 
@@ -64,17 +66,36 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 
 1. **Given** Shabbat has begun (after candle lighting time on Friday), **When** the app is running, **Then** it enters a low-activity mode — reducing screen update frequency, GPS polling, and background work — without activating the device's system-level Do Not Disturb feature
 2. **Given** the app is in Shabbat battery conservation mode, **When** Shabbat ends (after end-of-Shabbat time on Saturday night), **Then** the app automatically returns to normal activity levels
-3. **Given** the app is in Shabbat battery conservation mode, **When** I view the screen, **Then** the display shows a minimal, static-like layout (similar in spirit to a Do Not Disturb screen) that refreshes infrequently to minimize power draw, with the label reading "Shabbat"
+3. **Given** the app is in Shabbat battery conservation mode, **When** I view the screen, **Then** the display shows a minimal, static-like layout (similar in spirit to a Do Not Disturb screen) that refreshes infrequently to minimize power draw, with the label reading "Shabbat", and the time displayed as HH:MM without seconds
+
+---
+
+---
+
+### User Story 5 - Parashat HaShavua Display (Priority: P3)
+
+As a practicing Jewish user, I want to see the current week's Torah portion (Parashat HaShavua) on the main screen so that I always know which parasha is being read this Shabbat without reaching for my phone.
+
+**Why this priority**: Enhances the core Shabbat experience with contextually relevant Jewish content; depends on the time-display foundation (US1) being complete.
+
+**Independent Test**: Set the simulator date to Shabbat April 18, 2026 (20 Nisan 5786 = week of Parashat Shemini). Verify Row 5 of `TimeDisplayView` displays "Parasha: Shemini". Cross-reference against hebcal.com or chabad.org for the same date.
+
+**Acceptance Scenarios**:
+
+1. **Given** the device date is known, **When** I view the main screen, **Then** the correct weekly parasha name is displayed on the main screen (e.g., "Parasha: Bereshit" during the first week of the Torah cycle)
+2. **Given** the region setting is set to "Israel" and the date falls in a week where Israel and Diaspora read different parashiyot, **When** I view the main screen, **Then** the displayed parasha reflects the Israel calendar
+3. **Given** the parasha calculation fails or it is a Yom Tov week, **When** I view the main screen, **Then** the parasha row shows "--" gracefully with no crash
 
 ---
 
 ### Edge Cases
 
-- What happens when location services are unavailable or denied?
+- What happens when location services are unavailable or denied? GPS: acquiring… shown; falls back to LocationCache (24h).
 - How does the system handle timezone changes or travel?
 - What occurs when astronomical calculations fail due to extreme latitudes (polar regions)?
 - How does the app handle date transitions and time zone changes?
 - How does the app detect Shabbat start/end reliably enough to enter and exit battery conservation mode?
+- While GPS is acquiring on first launch, previously cached location data (up to 24h old, SC-003) is used to show preliminary times immediately.
 
 ## Requirements *(mandatory)*
 
@@ -84,15 +105,19 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **FR-002**: System MUST calculate sunrise time based on user's current location
 - **FR-003**: System MUST calculate sunset time based on user's current location  
 - **FR-004**: System MUST calculate candle lighting time (configurable minutes before sunset, default 18 minutes)
-- **FR-005**: System MUST calculate end of Shabbat time (configurable minutes after sunset, default 25-42 minutes)
+- **FR-005**: System MUST calculate end of Shabbat time (configurable offset after sunset, default 42 minutes — Rabbeinu Tam, the widely-used Ashkenazic standard)
 - **FR-006**: System MUST handle timezone changes and daylight saving time transitions
 - **FR-007**: System MUST provide fallback behavior when location services are unavailable
 - **FR-008**: System MUST update time displays automatically without user intervention
 - **FR-009**: System MUST enter a battery conservation mode during the Shabbat period (from candle lighting time Friday through end-of-Shabbat Saturday night) that reduces screen refresh rate, GPS polling frequency, and background calculations
 - **FR-010**: System MUST NOT activate the device's system-level Do Not Disturb mode; battery conservation is achieved purely through internal app-level activity reduction
 - **FR-011**: System MUST automatically exit battery conservation mode when the Shabbat period ends and return to normal operational activity levels
-- **FR-012**: System MUST display a simplified, low-refresh-rate layout during battery conservation mode, visually inspired by a minimal Do Not Disturb style screen
+- **FR-012**: System MUST display a simplified, low-refresh-rate layout during battery conservation mode, visually inspired by a minimal Do Not Disturb style screen; the time display MUST show HH:MM format only — seconds MUST NOT be displayed during any Shabbat display mode, preventing unnecessary 1-second redraw cycles
 - **FR-013**: System MUST display "Shabbat" as the mode label at all times (both during normal operation and battery conservation mode)
+- **FR-014**: System MUST support degree-based end-of-Shabbat calculation (solar zenith angle method) as a user-selectable alternative to fixed-minute offsets; supported options MUST include Tzais Geonim 8.5° (zenith 98.5°) and Tzais Geonim 7.083° (zenith 97.083°), matching the KosherJava `getTzaisGeonim8Point5Degrees()` and `getTzaisGeonim7Point083Degrees()` reference implementations
+- **FR-015**: System MUST display the current week's Parashat HaShavua on the main screen, computed offline from the Hebrew date (no network calls required); show "--" gracefully when unavailable
+- **FR-016**: System MUST support Israel vs Diaspora parasha calendar differences, selectable via the region setting (`TimeConfiguration.region`)
+- **FR-017**: System MUST activate GPS via `Position.enableLocationEvents(LOCATION_ONE_SHOT, callback)` on app foreground to acquire a current location fix for astronomical calculations; display "GPS: acquiring…" while the fix is in progress
 
 ### Key Entities *(include if feature involves data)*
 
@@ -100,13 +125,15 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **Location**: User's geographic coordinates for calculations
 - **AstronomicalData**: Sunrise and sunset calculations
 - **ShabbatTimes**: Candle lighting and end of Shabbat calculations
-- **TimeConfiguration**: User preferences for time offsets and display formats
+- **TimeConfiguration**: User preferences for time offsets, tzais calculation method, display formats, and region (Israel/Diaspora)
+- **HebrewCalendarService**: Gregorian → Hebrew date conversion (Maimonides algorithm)
+- **ParashaService**: Hebrew date → Parashat HaShavua lookup (offline, schedule tables for 6 Hebrew year types)
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Time displays update within 1 second of actual time changes
+- **SC-001**: Time displays update within 1 second of actual time changes during normal (non-Shabbat) operation; during Shabbat the display intentionally updates every 30 seconds (HH:MM format, no seconds shown) to conserve battery
 - **SC-002**: Astronomical calculations are accurate to within ±2 minutes of authoritative sources
 - **SC-003**: App continues to function with cached location data when GPS is unavailable for up to 24 hours
 - **SC-004**: All time calculations complete within 500ms of location acquisition
@@ -119,7 +146,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - Device has access to location services (GPS or network-based)
 - User is in a location where sunrise/sunset can be calculated (not extreme polar regions)
 - Device has accurate system time and timezone settings
-- User follows standard timing customs (18-20 min before sunset for candles, 25-42 min after for Shabbat end)
+- User follows standard timing customs (18 min before sunset for candle lighting by default; 42 min after sunset for end of Shabbat by default — Rabbeinu Tam opinion)
 - Base ShabbatMode application framework is already implemented
 - Internet connectivity available for initial astronomical calculation library setup
 - Battery conservation mode is implemented entirely at the app level; no system-level Do Not Disturb or power-saving modes are activated — the visual and behavioral pattern is inspired by Do Not Disturb but is a custom, app-internal implementation

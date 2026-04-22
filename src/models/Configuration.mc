@@ -16,7 +16,7 @@ class Configuration {
     function loadDefaults() as Void {
         _settings = {
             // Application settings
-            "app_name" => "ShabbatMode",
+            "app_name" => "Shabbat",
             "version" => "1.0.0",
             "first_run" => true,
 
@@ -131,7 +131,7 @@ class Configuration {
 
     // Specific configuration getters
     function getAppName() as Lang.String {
-        return getString("app_name", "ShabbatMode");
+        return getString("app_name", "Shabbat");
     }
 
     function getVersion() as Lang.String {

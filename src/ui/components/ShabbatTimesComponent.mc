@@ -65,13 +65,13 @@ class ShabbatTimesComponent extends BaseComponent {
         // Candle lighting row
         dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, candleY, _font,
-            (WatchUi.loadResource(Rez.Strings.CandleLightingLabel) as String) + ": " + getCandleLightingString(),
+            (WatchUi.loadResource(Rez.Strings.CandleLightingLabel) as Lang.String) + ": " + getCandleLightingString(),
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // End of Shabbat row
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, endY, _font,
-            (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as String) + ": " + getShabbatEndString(),
+            (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as Lang.String) + ": " + getShabbatEndString(),
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 }

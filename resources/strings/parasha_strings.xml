@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <!-- Parashat HaShavua — weekly Torah portion names (FR-015) -->
+
+    <!-- Bereishit -->
+    <string id="Parasha_Bereshit">Bereshit</string>
+    <string id="Parasha_Noach">Noach</string>
+    <string id="Parasha_LechLecha">Lech Lecha</string>
+    <string id="Parasha_Vayera">Vayera</string>
+    <string id="Parasha_ChayeiSarah">Chayei Sarah</string>
+    <string id="Parasha_Toldot">Toldot</string>
+    <string id="Parasha_Vayetzei">Vayetzei</string>
+    <string id="Parasha_Vayishlach">Vayishlach</string>
+    <string id="Parasha_Vayeshev">Vayeshev</string>
+    <string id="Parasha_Miketz">Miketz</string>
+    <string id="Parasha_Vayigash">Vayigash</string>
+    <string id="Parasha_Vayechi">Vayechi</string>
+
+    <!-- Shemot -->
+    <string id="Parasha_Shemot">Shemot</string>
+    <string id="Parasha_Vaera">Vaera</string>
+    <string id="Parasha_Bo">Bo</string>
+    <string id="Parasha_Beshalach">Beshalach</string>
+    <string id="Parasha_Yitro">Yitro</string>
+    <string id="Parasha_Mishpatim">Mishpatim</string>
+    <string id="Parasha_Terumah">Terumah</string>
+    <string id="Parasha_Tetzaveh">Tetzaveh</string>
+    <string id="Parasha_KiTisa">Ki Tisa</string>
+    <string id="Parasha_Vayakhel">Vayakhel</string>
+    <string id="Parasha_Pekudei">Pekudei</string>
+
+    <!-- Vayikra -->
+    <string id="Parasha_Vayikra">Vayikra</string>
+    <string id="Parasha_Tzav">Tzav</string>
+    <string id="Parasha_Shemini">Shemini</string>
+    <string id="Parasha_Tazria">Tazria</string>
+    <string id="Parasha_Metzora">Metzora</string>
+    <string id="Parasha_AchreiMot">Achrei Mot</string>
+    <string id="Parasha_Kedoshim">Kedoshim</string>
+    <string id="Parasha_Emor">Emor</string>
+    <string id="Parasha_Behar">Behar</string>
+    <string id="Parasha_Bechukotai">Bechukotai</string>
+
+    <!-- Bamidbar -->
+    <string id="Parasha_Bamidbar">Bamidbar</string>
+    <string id="Parasha_Nasso">Nasso</string>
+    <string id="Parasha_Behaalotecha">Beha'alotecha</string>
+    <string id="Parasha_Shelach">Shelach</string>
+    <string id="Parasha_Korach">Korach</string>
+    <string id="Parasha_Chukat">Chukat</string>
+    <string id="Parasha_Balak">Balak</string>
+    <string id="Parasha_Pinchas">Pinchas</string>
+    <string id="Parasha_Matot">Matot</string>
+    <string id="Parasha_Masei">Masei</string>
+
+    <!-- Devarim -->
+    <string id="Parasha_Devarim">Devarim</string>
+    <string id="Parasha_Vaetchanan">Vaetchanan</string>
+    <string id="Parasha_Eikev">Eikev</string>
+    <string id="Parasha_ReEh">Re'eh</string>
+    <string id="Parasha_Shoftim">Shoftim</string>
+    <string id="Parasha_KiTeitzei">Ki Teitzei</string>
+    <string id="Parasha_KiTavo">Ki Tavo</string>
+    <string id="Parasha_Nitzavim">Nitzavim</string>
+    <string id="Parasha_Vayelech">Vayelech</string>
+    <string id="Parasha_Haazinu">Haazinu</string>
+    <string id="Parasha_VeZotHaBeracha">Vezot Haberacha</string>
+
+    <!-- Combined (double) parashiyot -->
+    <string id="Parasha_VayakhlelPekudei">Vayakhel-Pekudei</string>
+    <string id="Parasha_TazriaMetzora">Tazria-Metzora</string>
+    <string id="Parasha_AchreiKedoshim">Achrei-Kedoshim</string>
+    <string id="Parasha_BeharBechukotai">Behar-Bechukotai</string>
+    <string id="Parasha_ChukatBalak">Chukat-Balak</string>
+    <string id="Parasha_MatotMasei">Matot-Masei</string>
+    <string id="Parasha_NitzavimVayelech">Nitzavim-Vayelech</string>
+
+    <!-- UI labels -->
+    <string id="ParashaLabel">Parasha:</string>
+    <string id="ParashaUnavailable">--</string>
+</strings>

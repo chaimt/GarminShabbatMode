@@ -1,4 +1,5 @@
 using Toybox.Lang;
+using Toybox.System;
 using Toybox.Time;
 using Toybox.Time.Gregorian;
 
@@ -38,24 +39,48 @@ class ShabbatTimeService {
 
     // Return Shabbat times for today (candle lighting + end of Shabbat).
     // Results are cached for the current calendar day.
+    // Supports both fixed-minute and degree-based tzais methods (FR-014).
     function getShabbatTimes() as ShabbatTimes? {
         var dayId = DateMath.todayDayId();
         if (_cachedTimes != null && _cachedDayId == dayId) {
             return _cachedTimes;
         }
 
-        var times = new ShabbatTimes();
+        var times        = new ShabbatTimes();
         var candleOffset = _config.getCandleLightingOffset();
-        var endOffset    = _config.getShabbatEndOffset();
+        var tzaisMethod  = _config.getTzaisMethod();
+        var sunsetSecs   = _getSunsetLocalSeconds();
 
-        var sunsetSecs = _getSunsetLocalSeconds();
-        times.configureFromSunset(sunsetSecs, candleOffset, endOffset, dayId);
+        if (!tzaisMethod.equals("fixed_minutes") && _hasLocationData()) {
+            // Degree-based path: calculate tzais via solar zenith angle
+            var lat    = _astronomicalService.hasData()
+                ? (_astronomicalService.getAstronomicalData() != null
+                    ? (_astronomicalService.getAstronomicalData() as AstronomicalData).getLatitude()
+                    : 0.0f)
+                : 0.0f;
+            var lon    = _astronomicalService.hasData()
+                ? (_astronomicalService.getAstronomicalData() != null
+                    ? (_astronomicalService.getAstronomicalData() as AstronomicalData).getLongitude()
+                    : 0.0f)
+                : 0.0f;
+            var nowGarmin   = Time.now().value();
+            var n           = SunCalculator.nFromGarminEpoch(nowGarmin);
+            var utcOffset   = _getUtcOffsetSeconds();
+            var tzaisSecs   = SunCalculator.calculateTzaisLocalSeconds(
+                lat, lon, n, utcOffset, tzaisMethod, _config.getShabbatEndOffset()
+            );
+            times.configureDegreeBasedTzais(sunsetSecs, tzaisSecs, candleOffset, dayId);
+        } else {
+            // Fixed-minute path (default, Rabbeinu Tam 42 min)
+            times.configureFromSunset(sunsetSecs, candleOffset, _config.getShabbatEndOffset(), dayId);
+        }
 
         _cachedTimes = times;
         _cachedDayId = dayId;
 
         if (_logger != null) {
-            _logger.info("ShabbatTimeService: candle=" + times.getCandleLightingLocalSeconds() +
+            _logger.info("ShabbatTimeService[" + tzaisMethod + "]: candle=" +
+                         times.getCandleLightingLocalSeconds() +
                          "s, end=" + times.getShabbatEndLocalSeconds() + "s");
         }
 
@@ -100,5 +125,20 @@ class ShabbatTimeService {
             }
         }
         return -1;
+    }
+
+    private function _hasLocationData() as Lang.Boolean {
+        return _astronomicalService.hasData() && _astronomicalService.getAstronomicalData() != null;
+    }
+
+    private function _getUtcOffsetSeconds() as Lang.Number {
+        var nowGarmin = Time.now().value();
+        var utcSecondsInDay = nowGarmin % 86400;
+        var clock = System.getClockTime();
+        var localSecondsInDay = clock.hour * 3600 + clock.min * 60 + clock.sec;
+        var offset = localSecondsInDay - utcSecondsInDay;
+        while (offset > 43200)  { offset -= 86400; }
+        while (offset < -43200) { offset += 86400; }
+        return offset;
     }
 }

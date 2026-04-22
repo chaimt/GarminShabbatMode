@@ -2,33 +2,28 @@ using Toybox.Graphics;
 using Toybox.Lang;
 using Toybox.System;
 
-// Displays the current local time as "HH:MM:SS" (or "HH:MM" when compact).
-// Refreshed every second by the parent view's timer.
+// Displays the current local time as "HH:MM" — seconds are never shown.
 class ClockComponent extends BaseComponent {
 
-    private var _showSeconds as Lang.Boolean;
-    private var _font as Graphics.FontReference;
+    private var _fontType;  // Graphics.FontDefinition constant (e.g. FONT_LARGE)
 
     function initialize(x as Lang.Number, y as Lang.Number, width as Lang.Number, height as Lang.Number) {
         BaseComponent.initialize(x, y, width, height);
-        _showSeconds = true;
-        _font = Graphics.FONT_LARGE;
+        _fontType = Graphics.FONT_LARGE;
         setTextColor(Graphics.COLOR_WHITE);
     }
 
-    function setShowSeconds(show as Lang.Boolean) as Void {
-        _showSeconds = show;
+    // Dim colour during Shabbat conservation mode.
+    function setShabbatMode(isShabbat as Lang.Boolean) as Void {
+        setTextColor(isShabbat ? Graphics.COLOR_LT_GRAY : Graphics.COLOR_WHITE);
     }
 
-    function setFont(font as Graphics.FontReference) as Void {
-        _font = font;
+    function setFont(fontType) as Void {
+        _fontType = fontType;
     }
 
     // Returns the formatted time string for external use.
     function getTimeString() as Lang.String {
-        if (_showSeconds) {
-            return TimeFormatter.currentTimeHHMMSS();
-        }
         return TimeFormatter.currentTimeHHMM();
     }
 
@@ -38,7 +33,7 @@ class ClockComponent extends BaseComponent {
         dc.drawText(
             getX() + getWidth() / 2,
             getY() + getHeight() / 2,
-            _font,
+            _fontType,
             timeStr,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
         );
