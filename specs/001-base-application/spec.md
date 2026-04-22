@@ -17,7 +17,7 @@ As a Garmin device user, I want the ShabbatMode application to initialize and be
 
 **Acceptance Scenarios**:
 
-1. **Given** the device is powered on, **When** the ShabbatMode app is launched, **Then** the main interface displays with no errors
+1. **Given** the device is powered on, **When** the ShabbatMode app is launched, **Then** the main interface displays with no errors and shows "Shabbat" as the app label
 2. **Given** the app is launched for the first time, **When** initialization completes, **Then** default configuration values are set
 
 ---
@@ -63,7 +63,7 @@ As a user, I want the app to detect and integrate with basic Garmin device funct
 ### Functional Requirements
 
 - **FR-001**: System MUST initialize without errors on compatible Garmin devices
-- **FR-002**: System MUST provide a main user interface for navigation
+- **FR-002**: System MUST provide a main user interface for navigation displaying "Shabbat" as the app label
 - **FR-003**: System MUST support persistent configuration storage
 - **FR-004**: Users MUST be able to access and modify basic settings
 - **FR-005**: System MUST detect basic device capabilities and status

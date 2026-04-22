@@ -9,12 +9,14 @@ class MainView extends WatchUi.View {
 
     private var _configService as ConfigService?;
     private var _shabbatService as ShabbatWindowService?;
+    private var _conservationService as BatteryConservationService?;
     private var _logger as Logger?;
     private var _components as Lang.Array<BaseComponent>;
     private var _appNameComponent as TextComponent?;
     private var _timeComponent as TextComponent?;
     private var _statusComponent as TextComponent?;
     private var _updateTimer as Timer.Timer?;
+    private var _currentTimerIntervalMs as Lang.Number;
     private var _initialized as Lang.Boolean;
 
     function initialize() {
@@ -22,6 +24,7 @@ class MainView extends WatchUi.View {
         _components = [] as Lang.Array<BaseComponent>;
         _initialized = false;
         _updateTimer = null;
+        _currentTimerIntervalMs = 1000;
 
         try {
             _configService = new ConfigService();
@@ -31,6 +34,8 @@ class MainView extends WatchUi.View {
             _logger.info("MainView initializing");
 
             _shabbatService = new ShabbatWindowService();
+            _conservationService = new BatteryConservationService(_shabbatService, null);
+            _conservationService.syncState();
 
             _initialized = true;
 
@@ -40,7 +45,8 @@ class MainView extends WatchUi.View {
         }
     }
 
-    // Called when this View is brought to the foreground – start 1-second refresh timer.
+    // Called when this View is brought to the foreground – start refresh timer
+    // at the interval appropriate for the current conservation mode.
     function onShow() as Void {
         if (_logger != null) {
             _logger.debug("MainView onShow");
@@ -48,7 +54,10 @@ class MainView extends WatchUi.View {
         if (_updateTimer == null) {
             _updateTimer = new Timer.Timer();
         }
-        _updateTimer.start(method(:onTimerTick), 1000, true);
+        _currentTimerIntervalMs = (_conservationService != null)
+            ? _conservationService.getRefreshIntervalMs()
+            : 1000;
+        _updateTimer.start(method(:onTimerTick), _currentTimerIntervalMs, true);
     }
 
     // Called when this View leaves the screen – stop the timer to save battery.
@@ -61,8 +70,21 @@ class MainView extends WatchUi.View {
         }
     }
 
-    // Timer callback: simply request a redraw each second.
+    // Timer callback: check for conservation-mode transitions, then redraw.
     function onTimerTick() as Void {
+        if (_conservationService != null) {
+            var stateChanged = _conservationService.update();
+            if (stateChanged && _updateTimer != null) {
+                // Shabbat started or ended – restart timer with the new interval.
+                var newInterval = _conservationService.getRefreshIntervalMs();
+                _updateTimer.stop();
+                _updateTimer.start(method(:onTimerTick), newInterval, true);
+                _currentTimerIntervalMs = newInterval;
+                if (_logger != null) {
+                    _logger.info("MainView timer restarted: " + newInterval + "ms");
+                }
+            }
+        }
         WatchUi.requestUpdate();
     }
 
@@ -85,7 +107,10 @@ class MainView extends WatchUi.View {
             }
 
             // Determine mode and update component text/colours accordingly.
-            if (_shabbatService != null && _shabbatService.isShabbat()) {
+            // Conservation mode (Shabbat active) uses a minimal, low-refresh layout.
+            if (_conservationService != null && _conservationService.isActive()) {
+                updateConservationDisplay();
+            } else if (_shabbatService != null && _shabbatService.isShabbat()) {
                 updateShabbatDisplay();
             } else {
                 updateCountdownDisplay();
@@ -117,7 +142,7 @@ class MainView extends WatchUi.View {
             var middleY = screenHeight / 2;
             var bottomY = screenHeight * 2 / 3;
 
-            var appName = "ShabbatMode";
+            var appName = WatchUi.loadResource(Rez.Strings.AppName) as String;
             if (_configService != null) {
                 appName = _configService.getAppName();
             }
@@ -155,7 +180,7 @@ class MainView extends WatchUi.View {
     // Shabbat is active: show the current time prominently.
     private function updateShabbatDisplay() as Void {
         if (_appNameComponent != null) {
-            _appNameComponent.setText("Shabbat");
+            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.ShabbatActive) as String);
             _appNameComponent.setTextColor(Graphics.COLOR_YELLOW);
         }
 
@@ -174,7 +199,9 @@ class MainView extends WatchUi.View {
         if (_statusComponent != null) {
             if (_shabbatService != null) {
                 var endsAt = _shabbatService.getNightfallTimeString();
-                _statusComponent.setText("Ends " + endsAt);
+                _statusComponent.setText(
+                    (WatchUi.loadResource(Rez.Strings.ConservationEndsPrefix) as String) + " " + endsAt
+                );
             } else {
                 _statusComponent.setText("");
             }
@@ -182,10 +209,41 @@ class MainView extends WatchUi.View {
         }
     }
 
+    // Shabbat battery conservation mode: minimal, static-like layout.
+    // Refreshes only every 30 s (≥80% reduction per SC-005).
+    // Shows time without seconds; end-of-Shabbat shown in dim text (FR-012).
+    private function updateConservationDisplay() as Void {
+        if (_appNameComponent != null) {
+            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.ShabbatActive) as String);
+            _appNameComponent.setTextColor(Graphics.COLOR_DK_GRAY);
+        }
+
+        if (_timeComponent != null) {
+            var clockTime = System.getClockTime();
+            // Omit seconds – they would be stale for up to 30 s anyway.
+            var timeString = Lang.format("$1$:$2$", [
+                clockTime.hour.format("%02d"),
+                clockTime.min.format("%02d")
+            ]);
+            _timeComponent.setText(timeString);
+            _timeComponent.setTextColor(Graphics.COLOR_LT_GRAY);
+        }
+
+        if (_statusComponent != null) {
+            var statusText = "";
+            if (_shabbatService != null) {
+                var endsAt = _shabbatService.getNightfallTimeString();
+                statusText = (WatchUi.loadResource(Rez.Strings.ConservationEndsPrefix) as String) + " " + endsAt;
+            }
+            _statusComponent.setText(statusText);
+            _statusComponent.setTextColor(Graphics.COLOR_DK_GRAY);
+        }
+    }
+
     // Shabbat is not active: show countdown to the next Shabbat.
     private function updateCountdownDisplay() as Void {
         if (_appNameComponent != null) {
-            _appNameComponent.setText("ShabbatMode");
+            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.AppName) as String);
             _appNameComponent.setTextColor(Graphics.COLOR_WHITE);
         }
 
@@ -207,9 +265,9 @@ class MainView extends WatchUi.View {
         }
 
         if (_statusComponent != null) {
-            var statusText = "until Shabbat";
+            var statusText = WatchUi.loadResource(Rez.Strings.ShabbatCountdown) as String;
             if (_shabbatService != null && !_shabbatService.hasLocation()) {
-                statusText = "No location set";
+                statusText = WatchUi.loadResource(Rez.Strings.LocationNeeded) as String;
             }
             _statusComponent.setText(statusText);
             _statusComponent.setTextColor(Graphics.COLOR_LT_GRAY);
@@ -230,7 +288,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height * 7 / 8,
                 Graphics.FONT_SMALL,
-                "Welcome! Press SELECT to continue",
+                WatchUi.loadResource(Rez.Strings.FirstRunMessage) as String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
         } catch (ex instanceof Lang.Exception) {
@@ -248,7 +306,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height / 2 - 20,
                 Graphics.FONT_MEDIUM,
-                "ShabbatMode",
+                WatchUi.loadResource(Rez.Strings.ShabbatModeTitle) as String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 
@@ -257,7 +315,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height / 2 + 20,
                 Graphics.FONT_SMALL,
-                "Initialization Error",
+                WatchUi.loadResource(Rez.Strings.InitializationError) as String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 
@@ -265,7 +323,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height / 2 + 40,
                 Graphics.FONT_TINY,
-                "Please restart the app",
+                WatchUi.loadResource(Rez.Strings.RestartRequired) as String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 

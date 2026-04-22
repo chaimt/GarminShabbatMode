@@ -32,6 +32,11 @@
     <string id="RestartRequired">Please restart the app</string>
     <string id="ConfigurationError">Configuration Error</string>
     <string id="StorageError">Storage Error</string>
+    <string id="SettingsError">Settings Error</string>
+    <string id="TimeDisplayError">Time Display Error</string>
+
+    <!-- Settings UI -->
+    <string id="SettingsHint">SELECT: change  BACK: exit</string>
 
     <!-- Settings (for future use) -->
     <string id="Settings">Settings</string>

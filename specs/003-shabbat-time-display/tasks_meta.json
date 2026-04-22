@@ -1,0 +1,62 @@
+{
+    "feature": "003-shabbat-time-display",
+    "created": "2026-04-22T11:15:36+03:00",
+    "tasks": {
+        "T064": {
+            "id": "T064",
+            "description": "Audit all source files for hardcoded user-facing strings and verify mapping to resource IDs",
+            "files": ["src/ui/MainView.mc", "src/ui/TimeDisplayView.mc", "src/ui/TimeSettingsView.mc", "src/ui/components/ShabbatTimesComponent.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        },
+        "T065": {
+            "id": "T065",
+            "description": "Add missing string entries (SettingsError, TimeDisplayError, SettingsHint) to resources/strings/strings.xml",
+            "files": ["resources/strings/strings.xml"],
+            "execution_mode": "ASYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        },
+        "T066": {
+            "id": "T066",
+            "description": "Add missing format string entries to resources/strings/shabbat_strings.xml",
+            "files": ["resources/strings/shabbat_strings.xml"],
+            "execution_mode": "ASYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        },
+        "T067": {
+            "id": "T067",
+            "description": "Refactor MainView.mc to replace all hardcoded strings with WatchUi.loadResource(Rez.Strings.*) calls",
+            "files": ["src/ui/MainView.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        },
+        "T068": {
+            "id": "T068",
+            "description": "Refactor TimeDisplayView.mc to replace all hardcoded strings with WatchUi.loadResource(Rez.Strings.*) calls",
+            "files": ["src/ui/TimeDisplayView.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        },
+        "T069": {
+            "id": "T069",
+            "description": "Refactor TimeSettingsView.mc to replace all hardcoded strings with WatchUi.loadResource(Rez.Strings.*) calls",
+            "files": ["src/ui/TimeSettingsView.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        },
+        "T070": {
+            "id": "T070",
+            "description": "Refactor ShabbatTimesComponent.mc to replace label literals with WatchUi.loadResource(Rez.Strings.*) calls",
+            "files": ["src/ui/components/ShabbatTimesComponent.mc"],
+            "execution_mode": "ASYNC",
+            "status": "pending",
+            "phase": "Phase 8"
+        }
+    }
+}

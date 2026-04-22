@@ -56,6 +56,20 @@ tasks:
     cmds:
       - open "{{.SDK}}/bin/ConnectIQ.app"
 
+  build-fr965:
+    desc: Compile the app for the Forerunner 965
+    deps: [jungle]
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - |
+        "{{.SDK}}/bin/monkeyc" \
+          -f monkey.jungle \
+          -o {{.BUILD_DIR}}/{{.APP_NAME}}-fr965.prg \
+          -d fr965 \
+          -y "{{.DEV_KEY}}" \
+          --warn \
+          --typecheck 0
+
   deploy:
     desc: Build and send the app to the already-running simulator
     deps: [build]
