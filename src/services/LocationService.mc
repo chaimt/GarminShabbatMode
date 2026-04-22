@@ -11,7 +11,7 @@ using Toybox.System;
 // from the in-memory cache.
 class LocationService {
 
-    private const UPDATE_INTERVAL_SECONDS = 300; // 5 minutes
+    private var _updateIntervalSeconds as Lang.Number; // default 5 minutes
 
     private var _lat as Lang.Float;
     private var _lon as Lang.Float;
@@ -21,6 +21,7 @@ class LocationService {
     private var _logger as Logger?;
 
     function initialize() {
+        _updateIntervalSeconds = 300; // 5 minutes default
         _lat = 0.0;
         _lon = 0.0;
         _hasLocation = false;
@@ -41,7 +42,7 @@ class LocationService {
         var now = System.getTimer();
         // Allow immediate query on first call (_lastRefreshTimer == 0)
         if (_lastRefreshTimer != 0 && _hasLocation &&
-            (now - _lastRefreshTimer) < UPDATE_INTERVAL_SECONDS * 1000) {
+            (now - _lastRefreshTimer) < _updateIntervalSeconds * 1000) {
             return _hasLocation; // Serve cached value within rate-limit window
         }
         _lastRefreshTimer = now;
@@ -72,6 +73,16 @@ class LocationService {
     // Human-readable source description for diagnostics.
     function getSource() as Lang.String {
         return _source;
+    }
+
+    // Override the GPS poll rate-limit window.
+    // BatteryConservationService calls this to extend the interval to 1800 s
+    // during Shabbat and restore it to 300 s afterwards.
+    function setUpdateIntervalSeconds(seconds as Lang.Number) as Void {
+        _updateIntervalSeconds = seconds;
+        if (_logger != null) {
+            _logger.info("LocationService: GPS interval set to " + seconds + "s");
+        }
     }
 
     // Update from an explicit coordinate pair (e.g. restored from cache).

@@ -146,6 +146,46 @@
 
 ---
 
+## Phase 7: User Story 4 - Shabbat Battery Conservation Mode (Priority: P2)
+
+**Goal**: Reduce app-level activity during the Shabbat period to preserve battery life without activating system-level Do Not Disturb
+
+**Independent Test**: Can be tested by verifying that during the Shabbat period the screen refresh rate and GPS polling are reduced, system DND is not activated, and normal activity resumes automatically at Shabbat end
+
+### Implementation for User Story 4
+
+- [x] T059 [US4] Add `setUpdateIntervalSeconds()` to LocationService for configurable GPS polling in src/services/LocationService.mc
+- [x] T060 [US4] Create BatteryConservationService for Shabbat activity reduction management in src/services/BatteryConservationService.mc
+- [x] T061 [US4] Integrate BatteryConservationService into MainView with adaptive timer restart in src/ui/MainView.mc
+- [x] T062 [US4] Implement minimal conservation display (static-like layout, no seconds, dim palette) in src/ui/MainView.mc
+- [x] T063 [P] [US4] Add battery conservation strings in resources/strings/shabbat_strings.xml
+
+**Checkpoint**: App reduces screen refresh by ≥80%, GPS polling ≤30 min, no system DND, auto-restores at Shabbat end
+
+---
+
+## Phase 8: String Resource Extraction (Cross-Cutting)
+
+**Purpose**: Eliminate all hardcoded user-facing strings from source code; every display string must be loaded from a Garmin resource file via `WatchUi.loadResource(Rez.Strings.XXX)`
+
+**Scope of hardcoded strings found**:
+- `MainView.mc`: "ShabbatMode", "Shabbat", "Ends …", "until Shabbat", "No location set", "Welcome! Press SELECT to continue", "Initialization Error", "Please restart the app"
+- `TimeDisplayView.mc`: "Shabbat", "ShabbatMode", "Candles: ", "Havdalah: ", "No location — set manually in settings", "Polar: times unavailable", "Time Display Error"
+- `TimeSettingsView.mc`: "Settings Error", "Settings", "Candles: $1$ min", "Shabbat end: $1$ min", "Rabbenu Tam: $1$", "Time format: $1$h", "ON", "OFF", "SELECT: change  BACK: exit"
+- `ShabbatTimesComponent.mc`: "Candles: ", "Havdalah: "
+
+- [ ] T064 [SYNC] Audit all source files for hardcoded user-facing strings and verify mapping to resource IDs; produce a comment block in each file listing the Rez.Strings.* IDs to use — affects `src/ui/MainView.mc`, `src/ui/TimeDisplayView.mc`, `src/ui/TimeSettingsView.mc`, `src/ui/components/ShabbatTimesComponent.mc`
+- [ ] T065 [P] [ASYNC] Add missing string entries (`SettingsError`, `TimeDisplayError`, `SettingsHint`) to `resources/strings/strings.xml`
+- [ ] T066 [P] [ASYNC] Add missing format string entries (`CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`) to `resources/strings/shabbat_strings.xml`
+- [ ] T067 [SYNC] Refactor `src/ui/MainView.mc` to replace all hardcoded user-facing strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActive`, `ConservationEndsPrefix`, `ShabbatCountdown`, `LocationNeeded`, `FirstRunMessage`, `ShabbatModeTitle`, `InitializationError`, `RestartRequired`
+- [ ] T068 [P] [SYNC] Refactor `src/ui/TimeDisplayView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActiveLabel`, `CandleLightingLabel`, `HavdalahLabel`, `LocationNeeded`, `PolarWarning`, `TimeDisplayError`
+- [ ] T069 [P] [SYNC] Refactor `src/ui/TimeSettingsView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `SettingsTitle`, `SettingsError`, `SettingsHint`, `CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`, `On`, `Off`
+- [ ] T070 [P] [ASYNC] Refactor `src/ui/components/ShabbatTimesComponent.mc` to replace `"Candles: "` and `"Havdalah: "` with `WatchUi.loadResource(Rez.Strings.CandleLightingLabel)` and `WatchUi.loadResource(Rez.Strings.HavdalahLabel)` plus a colon separator
+
+**Checkpoint**: No user-facing string literals remain in any `.mc` source file; all display text is driven by `resources/strings/*.xml`
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -156,7 +196,8 @@
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Final Phase)**: Depends on all desired user stories being complete
+- **Polish (Phase 6)**: Depends on all desired user stories being complete
+- **String Resource Extraction (Phase 8)**: Depends on all implementation phases — T065/T066 (add missing resources) must complete before T067–T070 (refactor code)
 
 ### User Story Dependencies
 
@@ -239,3 +280,5 @@ With multiple developers (after base app completion):
 - Ensure performance requirements: <500ms calculations, <1s display updates
 - Handle edge cases: extreme latitudes, location unavailable, timezone changes
 - Maintain battery efficiency in GPS usage and real-time updates
+- **String resources**: All user-facing display text MUST be loaded via `WatchUi.loadResource(Rez.Strings.XXX)` — never hardcode labels, status messages, or error strings in `.mc` source files
+- **Resource file ownership**: `strings.xml` = general app strings; `shabbat_strings.xml` = Shabbat-domain and settings strings; `time_strings.xml` = time-display labels and status messages

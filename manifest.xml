@@ -3,21 +3,16 @@
     <iq:application entry="ShabbatModeApp" id="fefbdfbf-cbba-4fa1-9d44-862bad9f29c4" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="4.0.0" name="@Strings.AppName" type="widget" version="1.0.0">
         <iq:products>
             <!-- Support for various Garmin devices - can be expanded -->
-            <iq:product id="fenix6"/>
             <iq:product id="fenix7"/>
             <iq:product id="fr965"/>
             <iq:product id="venu2"/>
-            <iq:product id="epix"/>
         </iq:products>
-
         <iq:permissions>
             <iq:uses-permission id="Positioning"/>
         </iq:permissions>
-
         <iq:languages>
             <iq:language>eng</iq:language>
         </iq:languages>
-
         <iq:barrels>
             <!-- No external barrels for base application -->
         </iq:barrels>

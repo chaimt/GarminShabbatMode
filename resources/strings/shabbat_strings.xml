@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <strings>
     <!-- Shabbat display labels -->
-    <string id="ShabbatModeTitle">ShabbatMode</string>
+    <string id="ShabbatModeTitle">Shabbat</string>
     <string id="ShabbatActive">Shabbat</string>
     <string id="ShabbatCountdown">until Shabbat</string>
     <string id="CandleLightingLabel">Candles</string>
@@ -19,12 +19,20 @@
     <string id="TimeFormat24h">24-hour</string>
     <string id="On">ON</string>
     <string id="Off">OFF</string>
+    <string id="CandlesSettingFormat">Candles: $1$ min</string>
+    <string id="ShabbatEndSettingFormat">Shabbat end: $1$ min</string>
+    <string id="RabbenuTamSettingFormat">Rabbenu Tam: $1$</string>
+    <string id="TimeFormatSettingFormat">Time format: $1$h</string>
 
     <!-- Regional/custom labels -->
     <string id="MinutesBefore">min before sunset</string>
     <string id="MinutesAfter">min after sunset</string>
     <string id="StandardCustum">Standard (18 min)</string>
     <string id="RabbenuTamOption">Rabbenu Tam (72 min)</string>
+
+    <!-- Battery conservation mode (User Story 4) -->
+    <string id="ConservationModeLabel">Shabbat</string>
+    <string id="ConservationEndsPrefix">Ends</string>
 
     <!-- Error / status messages -->
     <string id="LocationNeeded">Set location for Shabbat times</string>
