@@ -30,6 +30,12 @@
     <string id="StandardCustum">Standard (18 min)</string>
     <string id="RabbenuTamOption">Rabbenu Tam (72 min)</string>
 
+    <!-- Tzais method selector (FR-014) -->
+    <string id="TzaisMethodLabel">Shabbat end:</string>
+    <string id="TzaisFixed">Fixed min</string>
+    <string id="TzaisGeonim8_5">Geonim 8.5°</string>
+    <string id="TzaisGeonim7_083">Geonim 7°</string>
+
     <!-- Battery conservation mode (User Story 4) -->
     <string id="ConservationModeLabel">Shabbat</string>
     <string id="ConservationEndsPrefix">Ends</string>

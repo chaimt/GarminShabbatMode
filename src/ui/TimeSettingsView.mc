@@ -5,9 +5,9 @@ using Toybox.System;
 
 // Settings screen for time-related preferences:
 //   • Candle lighting offset (minutes before sunset, default 18)
-//   • End-of-Shabbat offset (minutes after sunset, default 25)
+//   • End-of-Shabbat offset in minutes (used when tzais method = fixed_minutes)
+//   • Tzais method: fixed_minutes / degrees_8_5 (Geonim 8.5°) / degrees_7_083 (Geonim 7°)
 //   • Time format (12h / 24h)
-//   • Rabbenu Tam option (72 minutes)
 //
 // Navigation: UP/DOWN cycle through settings items, SELECT toggles/increments.
 class TimeSettingsView extends WatchUi.View {
@@ -15,9 +15,12 @@ class TimeSettingsView extends WatchUi.View {
     // Setting items shown in order
     private const ITEM_CANDLE_OFFSET    = 0;
     private const ITEM_END_OFFSET       = 1;
-    private const ITEM_RABBENU_TAM      = 2;
+    private const ITEM_TZAIS_METHOD     = 2;
     private const ITEM_TIME_FORMAT      = 3;
     private const ITEM_COUNT            = 4;
+
+    // Ordered tzais method values matching TzaisFixed / TzaisGeonim8_5 / TzaisGeonim7_083
+    private const TZAIS_METHODS = ["fixed_minutes", "degrees_8_5", "degrees_7_083"];
 
     private var _config as TimeConfiguration;
     private var _selectedItem as Lang.Number;
@@ -48,7 +51,7 @@ class TimeSettingsView extends WatchUi.View {
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             dc.drawText(_screenWidth / 2, _screenHeight / 2,
                 Graphics.FONT_SMALL,
-                WatchUi.loadResource(Rez.Strings.SettingsError) as String,
+                WatchUi.loadResource(Rez.Strings.SettingsError) as Lang.String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
     }
@@ -75,8 +78,12 @@ class TimeSettingsView extends WatchUi.View {
                 if (newEnd > 90) { newEnd = 20; }
                 _config.setShabbatEndOffset(newEnd);
                 break;
-            case ITEM_RABBENU_TAM:
-                _config.setUseRabbenuTam(!_config.useRabbenuTam());
+            case ITEM_TZAIS_METHOD:
+                var currentMethod = _config.getTzaisMethod();
+                var nextMethod = "fixed_minutes";
+                if (currentMethod.equals("fixed_minutes"))  { nextMethod = "degrees_8_5"; }
+                else if (currentMethod.equals("degrees_8_5")) { nextMethod = "degrees_7_083"; }
+                _config.setTzaisMethod(nextMethod);
                 break;
             case ITEM_TIME_FORMAT:
                 var fmt = _config.getTimeFormat();
@@ -94,7 +101,7 @@ class TimeSettingsView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_screenWidth / 2, _screenHeight / 10,
             Graphics.FONT_SMALL,
-            WatchUi.loadResource(Rez.Strings.SettingsTitle) as String,
+            WatchUi.loadResource(Rez.Strings.SettingsTitle) as Lang.String,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -105,16 +112,18 @@ class TimeSettingsView extends WatchUi.View {
         var startY  = _screenHeight / 5;
         var rowH    = (_screenHeight - startY - _screenHeight / 10) / ITEM_COUNT;
 
-        var onStr  = WatchUi.loadResource(Rez.Strings.On)  as String;
-        var offStr = WatchUi.loadResource(Rez.Strings.Off) as String;
+        var tzaisMethod = _config.getTzaisMethod();
+        var tzaisLabel  = WatchUi.loadResource(Rez.Strings.TzaisFixed) as Lang.String;
+        if (tzaisMethod.equals("degrees_8_5"))   { tzaisLabel = WatchUi.loadResource(Rez.Strings.TzaisGeonim8_5)   as Lang.String; }
+        if (tzaisMethod.equals("degrees_7_083")) { tzaisLabel = WatchUi.loadResource(Rez.Strings.TzaisGeonim7_083) as Lang.String; }
+
         var labels = [
-            Lang.format(WatchUi.loadResource(Rez.Strings.CandlesSettingFormat) as String,
+            Lang.format(WatchUi.loadResource(Rez.Strings.CandlesSettingFormat) as Lang.String,
                 [_config.getCandleLightingOffset().format("%d")]),
-            Lang.format(WatchUi.loadResource(Rez.Strings.ShabbatEndSettingFormat) as String,
+            Lang.format(WatchUi.loadResource(Rez.Strings.ShabbatEndSettingFormat) as Lang.String,
                 [_config.getShabbatEndOffset().format("%d")]),
-            Lang.format(WatchUi.loadResource(Rez.Strings.RabbenuTamSettingFormat) as String,
-                [_config.useRabbenuTam() ? onStr : offStr]),
-            Lang.format(WatchUi.loadResource(Rez.Strings.TimeFormatSettingFormat) as String,
+            (WatchUi.loadResource(Rez.Strings.TzaisMethodLabel) as Lang.String) + " " + tzaisLabel,
+            Lang.format(WatchUi.loadResource(Rez.Strings.TimeFormatSettingFormat) as Lang.String,
                 [_config.getTimeFormat().format("%d")])
         ];
 
@@ -139,7 +148,7 @@ class TimeSettingsView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_screenWidth / 2, _screenHeight - _screenHeight / 12,
             Graphics.FONT_TINY,
-            WatchUi.loadResource(Rez.Strings.SettingsHint) as String,
+            WatchUi.loadResource(Rez.Strings.SettingsHint) as Lang.String,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 }

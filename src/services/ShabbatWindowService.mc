@@ -159,26 +159,29 @@ class ShabbatWindowService {
     }
 
     // Core calculation: pre-compute all sunset/nightfall values for today's dow.
+    // Uses the same tzais method as ShabbatTimeService so that the battery conservation
+    // boundary always matches the time displayed on screen (T080).
     private function _calculateForDay(nowGarmin as Lang.Number, dow as Lang.Number) as Void {
-        var config = new TimeConfiguration();
-        var endOffsetSeconds = config.getShabbatEndOffset() * 60;
+        var config       = new TimeConfiguration();
+        var tzaisMethod  = config.getTzaisMethod();
+        var fixedMinutes = config.getShabbatEndOffset();
 
         if (dow == 6) {
-            // Friday: today's sunset starts Shabbat; tomorrow's sunset + offset ends it.
+            // Friday: today's sunset starts Shabbat; tomorrow's nightfall ends it.
             var nToday = SunCalculator.nFromGarminEpoch(nowGarmin);
             _fridaySunsetLocal = _sunsetLocalSeconds(nToday);
 
             var nTomorrow = SunCalculator.nFromGarminEpoch(nowGarmin + 86400);
-            _saturdayNightfallLocal = _normalizeDay(_sunsetLocalSeconds(nTomorrow) + endOffsetSeconds);
+            _saturdayNightfallLocal = _tzaisLocalSeconds(nTomorrow, tzaisMethod, fixedMinutes);
 
             // Pre-calc next week's Friday for after-Shabbat countdown
             _nextFridayDaysAhead = 7;
             _nextFridaySunsetLocal = _sunsetLocalSeconds(SunCalculator.nFromGarminEpoch(nowGarmin + 7 * 86400));
 
         } else if (dow == 7) {
-            // Saturday: tonight's sunset + offset ends Shabbat.
+            // Saturday: tonight's nightfall ends Shabbat.
             var nToday = SunCalculator.nFromGarminEpoch(nowGarmin);
-            _saturdayNightfallLocal = _normalizeDay(_sunsetLocalSeconds(nToday) + endOffsetSeconds);
+            _saturdayNightfallLocal = _tzaisLocalSeconds(nToday, tzaisMethod, fixedMinutes);
             _fridaySunsetLocal = 0;
 
             // Next Shabbat is 6 days away (next Friday)
@@ -202,13 +205,26 @@ class ShabbatWindowService {
         if (!_hasLocation) {
             return 64800; // 18:00 default
         }
-
-        var utcSeconds = SunCalculator.calculateSunsetUTC(_lat, _lon, n);
+        var utcSeconds = SunCalculator.calculateSunsetAtZenithUTC(_lat, _lon, n, GEOMETRIC_ZENITH + 0.8333f);
         if (utcSeconds == null) {
             return 64800; // Polar fallback
         }
-
         return _normalizeDay(utcSeconds + _utcOffsetSeconds);
+    }
+
+    // Calculate tzais (nightfall) using the same method as ShabbatTimeService.
+    // Falls back to sunset + 42 min when location unavailable or polar.
+    private function _tzaisLocalSeconds(n as Lang.Float, method as Lang.String, fixedMinutes as Lang.Number) as Lang.Number {
+        if (!_hasLocation) {
+            return _normalizeDay(64800 + fixedMinutes * 60); // 18:00 + offset fallback
+        }
+        var tzais = SunCalculator.calculateTzaisLocalSeconds(
+            _lat, _lon, n, _utcOffsetSeconds, method, fixedMinutes
+        );
+        if (tzais == -1) {
+            return _normalizeDay(64800 + fixedMinutes * 60); // Polar fallback
+        }
+        return tzais;
     }
 
     // Normalise a seconds value into [0, 86400).

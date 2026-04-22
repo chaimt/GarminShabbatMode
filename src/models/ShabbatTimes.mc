@@ -85,6 +85,32 @@ class ShabbatTimes {
         return _isValid;
     }
 
+    // Configure using a pre-computed degree-based tzais time (FR-014).
+    // tzaisLocalSecs comes from SunCalculator.calculateTzaisLocalSeconds() with a
+    // degree-based method ("degrees_8_5" or "degrees_7_083").
+    // The candle-lighting time is still derived from sunset − candleOffsetMinutes.
+    function configureDegreeBasedTzais(
+        sunsetLocalSecs    as Lang.Number,
+        tzaisLocalSecs     as Lang.Number,
+        candleOffsetMinutes as Lang.Number,
+        dayId              as Lang.Number
+    ) as Void {
+        _sunsetLocalSeconds = sunsetLocalSecs;
+        _endOffset    = 0; // not applicable for degree-based path
+        _candleOffset = candleOffsetMinutes;
+        _dayId = dayId;
+
+        if (sunsetLocalSecs != INVALID && tzaisLocalSecs != INVALID) {
+            _candleLightingLocalSeconds = _normalise(sunsetLocalSecs - candleOffsetMinutes * 60);
+            _shabbatEndLocalSeconds     = tzaisLocalSecs;
+            _isValid = true;
+        } else {
+            _candleLightingLocalSeconds = INVALID;
+            _shabbatEndLocalSeconds     = INVALID;
+            _isValid = false;
+        }
+    }
+
     // -------------------------------------------------------------------------
     private function _normalise(seconds as Lang.Number) as Lang.Number {
         var s = seconds;

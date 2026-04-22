@@ -86,8 +86,9 @@
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `candleLightingOffsetMinutes` | `Number` | 18 | Minutes before sunset for candle lighting |
-| `shabbatEndOffsetMinutes` | `Number` | 42 | Minutes after sunset for end of Shabbat (tzais) |
-| `rabbenuTamEnabled` | `Boolean` | false | If true, adds 16.1° zenith-based tzais (future capability) |
+| `shabbatEndOffsetMinutes` | `Number` | 42 | Minutes after sunset for end of Shabbat (used when `tzaisMethod = "fixed_minutes"`) |
+| `tzaisMethod` | `String` | `"fixed_minutes"` | Tzais calculation method: `"fixed_minutes"` (KosherJava `getTzais()`), `"degrees_8_5"` (`getTzaisGeonim8Point5Degrees()`), `"degrees_7_083"` (`getTzaisGeonim7Point083Degrees()`) |
+| `rabbenuTamEnabled` | `Boolean` | false | Legacy flag; when true, `tzaisMethod` returns `"fixed_minutes"` with `shabbatEndOffsetMinutes = 72` |
 | `use24HourFormat` | `Boolean` | true | Whether to display time in 24h format |
 
 **Persistence**: Stored to `Application.Storage` via `ConfigService`.  

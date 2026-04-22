@@ -67,8 +67,19 @@
 
 **Implementation Notes**:
 - `TimeConfiguration.getShabbatEndOffset()` stores the fixed-minute offset (default 42 minutes).
-- If degree-based tzais is added in a future feature, `SunCalculator` must expose a `calculateSunAtZenithUTC(lat, lon, n, zenithDegrees)` helper that replaces the hard-coded `-0.8333` with the supplied angle.
-- The formula: `zenithRadians = toRadians(zenithDegrees)` then `cosH = (sin(zenithRad) - sin(lat)*sin(delta)) / (cos(lat)*cos(delta))`. For zenith = 98.5° this gives the 8.5° below-horizon time.
+- **Degree-based tzais is now implemented** in `SunCalculator.calculateTzaisLocalSeconds()` (Phase 10, T077). The method accepts a `method` parameter: `"fixed_minutes"`, `"degrees_8_5"` (zenith 98.5°), or `"degrees_7_083"` (zenith 97.083°).
+- The formula: for zenith `z`, the hour angle `cosH = (sin(90° - z) - sin(lat)·sin(delta)) / (cos(lat)·cos(delta))`. For z = 98.5° this gives `sin(-8.5°)` — exactly 8.5° below horizon.
+- `TimeConfiguration.getTzaisMethod()` returns the selected method; `TimeSettingsView` exposes a 3-way cycle selector.
+- `ShabbatWindowService` uses the same `calculateTzaisLocalSeconds()` call to ensure battery conservation boundaries match displayed times exactly.
+
+**Degree-Based Tzais — Minutes After Sunset by Latitude (approximate)**:
+
+| Latitude | 8.5° (spring) | 8.5° (summer) | 7.083° (spring) |
+|----------|--------------|--------------|-----------------|
+| 32°N (Jerusalem) | ~35 min | ~38 min | ~29 min |
+| 40°N (New York)  | ~42 min | ~48 min | ~35 min |
+| 51°N (London)    | ~48 min | ~60+ min| ~40 min |
+| 32°S (Melbourne) | ~35 min | ~30 min | ~29 min |
 
 ---
 
@@ -143,6 +154,10 @@ The following maps KosherJava API methods to the Monkey C implementation:
 | `ZmanimCalendar.getTzais()` | `ShabbatTimes.getShabbatEndLocalSeconds()` | `sunset + endOffset` minutes (default 42) |
 | `AstronomicalCalendar.getGeoLocation()` | `LocationService.getLatitude/Longitude()` | GPS or cached location |
 | `NOAACalculator` (default calculator) | `SunCalculator.mc` (full class) | NOAA simplified algorithm |
+| `AstronomicalCalendar.getSunriseOffsetByDegrees(zenith)` | `SunCalculator.calculateSunriseAtZenithUTC(lat, lon, n, zenith)` | Generic zenith sunrise |
+| `AstronomicalCalendar.getSunsetOffsetByDegrees(zenith)` | `SunCalculator.calculateSunsetAtZenithUTC(lat, lon, n, zenith)` | Generic zenith sunset |
+| `ComplexZmanimCalendar.getTzaisGeonim8Point5Degrees()` | `SunCalculator.calculateTzaisLocalSeconds(..., "degrees_8_5", ...)` | Zenith 98.5° |
+| `ComplexZmanimCalendar.getTzaisGeonim7Point083Degrees()` | `SunCalculator.calculateTzaisLocalSeconds(..., "degrees_7_083", ...)` | Zenith 97.083° |
 | `GeoLocation.timeZoneOffset` | `TimezoneService.getUtcOffsetSeconds()` | Device-provided UTC offset |
 
 ---

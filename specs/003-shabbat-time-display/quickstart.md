@@ -133,6 +133,20 @@ There is no automated test runner in the CIQ SDK. Verification is done via the s
 3. Compare displayed sunrise/sunset with [KosherJava Zmanim Calendar](https://kosherjava.com/zmanim-project/zmanim-calendar/) for the same location and today's date
 4. **Pass criteria**: displayed times within ±2 minutes of KosherJava reference
 
+### Degree-Based Tzais Validation (FR-014, SC-002)
+
+1. Launch the app in the simulator and set GPS to Lakewood NJ (40.096°N, 74.222°W)
+2. Open **Settings** (press SELECT from MainView) and navigate to "Shabbat end:"
+3. Press SELECT to cycle to **"Geonim 8.5°"**
+4. Set the simulator clock to a Saturday evening (e.g., 19:00 local time on 2026-04-22)
+5. Read the displayed end-of-Shabbat time
+6. Compare against the KosherJava Zmanim Calendar for the same location and date:
+   - Expected: `getTzaisGeonim8Point5Degrees()` ≈ 20:10 EDT (±2 minutes)
+7. Repeat with **"Geonim 7°"** → expected ≈ 19:55 EDT (±2 minutes)
+8. Cycle back to **"Fixed min"** → verify end time = sunset + 42 minutes ≈ 20:09 EDT
+
+Reference values for all test locations: `specs/003-shabbat-time-display/validation/kosherjava-reference.md`
+
 ### Battery Conservation Mode Test (SC-005: ≥80% refresh reduction)
 
 1. Override the simulated time to Friday after candle lighting

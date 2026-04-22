@@ -90,8 +90,8 @@ class AstronomicalService {
             var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
             data.configure(lat, lon, dayId, -1, -1, true);
         } else {
-            var sunsetUtc  = SunCalculator.calculateSunsetUTC(lat, lon, n);
-            var sunriseUtc = _calculateSunriseUTC(lat, lon, n);
+            var sunsetUtc  = SunCalculator.calculateSunsetAtZenithUTC(lat, lon, n, GEOMETRIC_ZENITH + 0.8333f);
+            var sunriseUtc = SunCalculator.calculateSunriseAtZenithUTC(lat, lon, n, GEOMETRIC_ZENITH + 0.8333f);
 
             var sunsetLocal  = sunsetUtc  != null ? DateMath.normaliseDay(sunsetUtc  + utcOffset) : -1;
             var sunriseLocal = sunriseUtc != null ? DateMath.normaliseDay(sunriseUtc + utcOffset) : -1;
@@ -108,60 +108,4 @@ class AstronomicalService {
         _calculationCache.store(dayId, data);
     }
 
-    // Sunrise is symmetric with sunset around solar noon.
-    // H is the same as for sunset; sunrise = noon - 4*H minutes.
-    private function _calculateSunriseUTC(lat as Lang.Float, lon as Lang.Float, n as Lang.Float) as Lang.Number? {
-        var t = n / 36525.0;
-
-        var L0 = 280.46646 + 36000.76983 * t + 0.0003032 * t * t;
-        L0 = L0 - Math.floor(L0 / 360.0) * 360.0;
-
-        var M = 357.52911 + 35999.05029 * t - 0.0001537 * t * t;
-        M = M - Math.floor(M / 360.0) * 360.0;
-        var Mrad = Math.toRadians(M);
-
-        var C = (1.914602 - 0.004817 * t - 0.000014 * t * t) * Math.sin(Mrad)
-              + (0.019993 - 0.000101 * t) * Math.sin(2.0 * Mrad)
-              + 0.000289 * Math.sin(3.0 * Mrad);
-
-        var sunLon = L0 + C;
-        var omegaRad = Math.toRadians(125.04 - 1934.136 * t);
-        var lambda = sunLon - 0.00569 - 0.00478 * Math.sin(omegaRad);
-
-        var epsilonBase = 23.0 + (26.0 + (21.448 - t * (46.8150 + t * (0.00059 - t * 0.001813))) / 60.0) / 60.0;
-        var epsilon = epsilonBase + 0.00256 * Math.cos(omegaRad);
-        var epsilonRad = Math.toRadians(epsilon);
-
-        var delta = Math.asin(Math.sin(epsilonRad) * Math.sin(Math.toRadians(lambda)));
-
-        var e = 0.016708634 - t * (0.000042037 + 0.0000001267 * t);
-
-        var L0rad = Math.toRadians(L0);
-        var tanHalfEps = Math.tan(epsilonRad / 2.0);
-        var y = tanHalfEps * tanHalfEps;
-        var EqTime = 4.0 * Math.toDegrees(
-            y * Math.sin(2.0 * L0rad)
-            - 2.0 * e * Math.sin(Mrad)
-            + 4.0 * e * y * Math.sin(Mrad) * Math.cos(2.0 * L0rad)
-            - 0.5 * y * y * Math.sin(4.0 * L0rad)
-            - 1.25 * e * e * Math.sin(2.0 * Mrad)
-        );
-
-        var latRad = Math.toRadians(lat);
-        var cosH = (Math.sin(Math.toRadians(-0.8333)) - Math.sin(latRad) * Math.sin(delta))
-                 / (Math.cos(latRad) * Math.cos(delta));
-
-        if (cosH > 1.0 || cosH < -1.0) {
-            return null; // Polar
-        }
-
-        var H = Math.toDegrees(Math.acos(cosH));
-        var solarNoon = 720.0 - 4.0 * lon - EqTime;
-
-        // Sunrise = noon - H (in minutes)
-        var sunriseMinutes = solarNoon - 4.0 * H;
-        sunriseMinutes = sunriseMinutes - Math.floor(sunriseMinutes / 1440.0) * 1440.0;
-
-        return (sunriseMinutes * 60.0).toNumber();
-    }
 }
