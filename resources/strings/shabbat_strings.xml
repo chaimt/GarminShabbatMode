@@ -49,4 +49,21 @@
     <string id="LocationNeeded">Set location for Shabbat times</string>
     <string id="ShabbatTimesUnavail">Times unavailable</string>
     <string id="PolarWarning">No Shabbat times at this latitude</string>
+
+    <!-- Location settings (feature 004) -->
+    <string id="LocationSourceLabel">Location:</string>
+    <string id="LocationSourceGps">GPS</string>
+    <string id="LocationSourceManual">Manual</string>
+    <string id="LatitudeSettingFormat">Lat: $1$°</string>
+    <string id="LongitudeSettingFormat">Lon: $1$°</string>
+    <string id="LocationSourceSettingFormat">Location: $1$</string>
+    <string id="ManualLocNoCoords">Set lat/lon first</string>
+    <string id="LocationIndicatorManual">Manual</string>
+    <string id="LocationIndicatorNoCoords">No coords set</string>
+
+    <!-- GPS capture action (US4) -->
+    <string id="CaptureGpsLabel">Capture GPS</string>
+    <string id="CapturingGpsLabel">Acquiring&#x2026;</string>
+    <string id="GpsCapturedLabel">GPS Saved!</string>
+    <string id="GpsCaptureFailed">GPS failed</string>
 </strings>

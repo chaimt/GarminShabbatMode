@@ -279,6 +279,17 @@ class ConfigService {
         return autoSave();
     }
 
+    // Returns "gps" (default) or "manual".
+    function getLocationSource() as Lang.String {
+        return _configuration.getLocationSource();
+    }
+
+    // Accepts "gps" or "manual"; persists immediately.
+    function setLocationSource(source as Lang.String) as Lang.Boolean {
+        _configuration.setLocationSource(source);
+        return autoSave();
+    }
+
     function getLatitude() as Lang.Float {
         return _configuration.getLatitude();
     }

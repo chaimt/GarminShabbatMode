@@ -44,4 +44,10 @@ class LocationValidator {
     static function isUsable(lat as Lang.Float, lon as Lang.Float) as Lang.Boolean {
         return isValidCoordinates(lat, lon) && isNonZero(lat, lon);
     }
+
+    // Convenience alias: validates a manually-entered coordinate pair is in range
+    // and non-zero (i.e. the user has actually configured a location).
+    static function hasValidManualCoords(lat as Lang.Float, lon as Lang.Float) as Lang.Boolean {
+        return isUsable(lat, lon);
+    }
 }

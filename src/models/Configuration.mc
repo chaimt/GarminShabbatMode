@@ -203,6 +203,16 @@ class Configuration {
         set("location_auto", auto);
     }
 
+    // Returns "gps" (default) or "manual" — semantic wrapper over location_auto.
+    function getLocationSource() as Lang.String {
+        return isLocationAuto() ? "gps" : "manual";
+    }
+
+    // Accepts "gps" or "manual"; anything else is treated as "gps".
+    function setLocationSource(source as Lang.String) as Void {
+        setLocationAuto(!source.equals("manual"));
+    }
+
     function getLatitude() as Lang.Float {
         return getFloat("latitude", 0.0);
     }

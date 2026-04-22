@@ -254,6 +254,16 @@ class TimeConfiguration {
         return set("auto_location", enabled);
     }
 
+    // Returns "gps" (default) or "manual" — semantic wrapper over auto_location.
+    function getLocationSource() as Lang.String {
+        return isAutoLocationEnabled() ? "gps" : "manual";
+    }
+
+    // Accepts "gps" or "manual"; anything else defaults to "gps".
+    function setLocationSource(source as Lang.String) as Lang.Boolean {
+        return setAutoLocationEnabled(!source.equals("manual"));
+    }
+
     function getManualLatitude() as Lang.Float {
         return getFloat("manual_latitude", 0.0);
     }
