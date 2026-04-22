@@ -162,6 +162,67 @@ The following maps KosherJava API methods to the Monkey C implementation:
 
 ---
 
+### 10. Hebrew Calendar & Parashat HaShavua Algorithm
+
+**Question**: How do we calculate the current week's Torah portion (Parashat HaShavua) without a Hebrew calendar library on the Garmin CIQ platform?
+
+**Decision**: Implement the **Maimonides / Dershowitz-Reingold molad algorithm** in `HebrewCalendarService.mc` and a **pre-computed schedule table** (6 × 55 entries) in `ParashaService.mc`.
+
+**Rationale**:
+- No Hebrew calendar library exists for CIQ (same situation as KosherJava: must port algorithms).
+- The molad algorithm is deterministic, pure arithmetic, and requires only `Lang.Long` arithmetic — no floating point.
+- Parasha assignment depends on the Hebrew **year type** (deficient/regular/complete × regular/leap = 6 types). A lookup table of 6 × 55 integers (one row per year type, one column per week-of-year) is compact and avoids runtime complexity.
+- Offline operation: all data is embedded in the app; no HTTP calls needed. Aligns with Principle V.
+
+**Hebrew Year Types** (used as schedule table index):
+
+| Code | Days | Type        | Description |
+|------|------|-------------|-------------|
+| 0    | 353  | Deficient regular | Chaser (non-leap) |
+| 1    | 354  | Regular regular   | Kesidrah (non-leap) |
+| 2    | 355  | Complete regular  | Shalem (non-leap) |
+| 3    | 383  | Deficient leap    | Chaser (leap) |
+| 4    | 384  | Regular leap      | Kesidrah (leap) |
+| 5    | 385  | Complete leap     | Shalem (leap) |
+
+Year type is computed as: `daysInHebrewYear(year) % 10` → 3=deficient, 4=regular, 5=complete.
+
+**7 Double Parashiyot** (Diaspora non-leap years; Israel sometimes reads separately):
+
+| Index | Combined Name | Constituent parashiyot |
+|-------|--------------|------------------------|
+| 100   | Vayakhel-Pekudei | 21 + 22 |
+| 101   | Tazria-Metzora | 26 + 27 |
+| 102   | Achrei Mot-Kedoshim | 28 + 29 |
+| 103   | Behar-Bechukotai | 31 + 32 |
+| 104   | Chukat-Balak | 38 + 39 |
+| 105   | Matot-Masei | 41 + 42 |
+| 106   | Nitzavim-Vayelech | 50 + 51 |
+
+**Israel vs Diaspora**: In Israel, Yom Tov is 1 day (Diaspora: 2 days). After Pesach in non-leap years, Israel resumes the regular cycle 1 week earlier, causing the two calendars to diverge for several weeks. The `ParashaService` maintains separate `ISRAEL_SCHEDULE` and `DIASPORA_SCHEDULE` tables for non-leap year types (codes 0–2); leap years match.
+
+**Algorithm implementation** (`HebrewCalendarService.mc`):
+- `elapsedDaysHebrewYear(year)` — implements 4 Talmudic postponement rules (dehiyyot) in integer arithmetic using `Lang.Long`.
+- `isHebrewLeapYear(year)` — `(7*year + 1) % 19 < 7` (Metonic 19-year cycle).
+- `gregorianToHebrewYear()` — converts via Julian Day Number; approximates year then refines by 1.
+- `hebrewDayOfYear()` — difference in JDs between today and 1 Tishrei.
+
+**KosherJava cross-reference**:
+
+| KosherJava method | Monkey C equivalent |
+|---|---|
+| `JewishCalendar.getParashahIndex()` | `ParashaService.getParashaIndexForToday(isIsrael)` |
+| `JewishDate.getJewishYear()` | `HebrewCalendarService.gregorianToHebrewYear()` |
+| `JewishDate.getDayOfYear()` | `HebrewCalendarService.hebrewDayOfYear()` |
+| `JewishDate.isJewishLeapYear()` | `HebrewCalendarService.isHebrewLeapYear()` |
+| `JewishCalendar.isYomTovAssurBemelacha()` | schedule index = -1 |
+
+**Validation reference**: For any date, cross-check `ParashaService.getParashaName()` against:
+- [Hebcal](https://www.hebcal.com/) weekly Torah portion
+- [Chabad.org](https://www.chabad.org/calendar/) Shabbat schedule
+
+---
+
 ## Summary of Decisions
 
 | # | Decision | Chosen Approach | Key Reason |

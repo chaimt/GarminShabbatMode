@@ -1,8 +1,10 @@
 using Toybox.Lang;
 using Toybox.Math;
+using Toybox.Position;
 using Toybox.Time;
 using Toybox.Time.Gregorian;
 using Toybox.System;
+using Toybox.WatchUi;
 
 // Computes daily sunrise and sunset times using the NOAA simplified solar
 // position algorithm (same as SunCalculator).  Results are accurate to ±2
@@ -35,6 +37,59 @@ class AstronomicalService {
     function refresh() as Void {
         _locationService.refresh();
         _ensureCalculated();
+    }
+
+    // Actively enable GPS hardware (LOCATION_ONE_SHOT).
+    // When a fix arrives, _onGpsLocationUpdate() is called automatically,
+    // which updates the location, clears stale cache, and requests a redraw.
+    function startGpsTracking() as Void {
+        _locationService.startGpsTracking(method(:_onGpsLocationUpdate));
+    }
+
+    // Stop active GPS tracking and release the radio.
+    function stopGpsTracking() as Void {
+        _locationService.stopGpsTracking();
+    }
+
+    // True while a LOCATION_ONE_SHOT request is outstanding.
+    function isGpsTracking() as Lang.Boolean {
+        return _locationService.isGpsTracking();
+    }
+
+    // GPS callback delivered by Position.enableLocationEvents().
+    // Updates location, persists to cache, invalidates stale day data,
+    // recomputes sunrise/sunset, and requests an immediate UI refresh.
+    function _onGpsLocationUpdate(info as Position.Info) as Void {
+        try {
+            if (info == null || info.position == null) {
+                return;
+            }
+            var coords = info.position.toDegrees();
+            if (coords == null || coords.size() < 2) {
+                return;
+            }
+            var lat = coords[0].toFloat();
+            var lon = coords[1].toFloat();
+            if (!LocationValidator.isValidLatitude(lat) ||
+                !LocationValidator.isValidLongitude(lon) ||
+                (lat == 0.0 && lon == 0.0)) {
+                return;
+            }
+
+            _locationService.setLocation(lat, lon);
+            new LocationCache().save(lat, lon);
+            _calculationCache.clear();
+            _ensureCalculated();
+
+            if (_logger != null) {
+                _logger.info("AstronomicalService: GPS fix received " + lat + ", " + lon);
+            }
+            WatchUi.requestUpdate();
+        } catch (ex instanceof Lang.Exception) {
+            if (_logger != null) {
+                _logger.warn("AstronomicalService: GPS callback error - " + ex.getErrorMessage());
+            }
+        }
     }
 
     // True when astronomical data is available for today.

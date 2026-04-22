@@ -307,3 +307,266 @@ T093 [P]    (spec.md, parallel)
 3. Verify Row 1 shows `19:30` (no `:SS`)
 4. Check simulator logs: timer firing at 30s intervals, not 1s
 5. Wait for Shabbat to end (simulate Saturday 20:15); verify seconds reappear and timer returns to 1s
+
+---
+
+## Phase 14: US2 Enhancement — GPS Activation on App Load
+
+**User Story**: US2 — Astronomical Time Calculations (Priority: P2)  
+**Goal**: Proactively enable GPS hardware via `Position.enableLocationEvents()` when the app loads so that `AstronomicalService` can compute accurate astronomical times (sunrise, sunset, candle lighting, end of Shabbat) using a fresh GPS fix. Falls back to `LocationCache` (last-known location, up to 24h old) while GPS acquires a signal.
+
+**Research decision alignment**:
+- Research §7: GPS poll every 5 min (normal) / 30 min (Shabbat). `Position.LOCATION_ONE_SHOT` satisfies this intent — GPS turns off automatically after the first fix is delivered.
+- SC-003: "App continues to function with cached location data for up to 24 hours" — satisfied by `LocationCache` fallback loaded in `LocationService.initialize()`.
+- SC-004: "All time calculations complete within 500ms of location acquisition" — `AstronomicalService._onGpsLocationUpdate()` recalculates immediately on fix delivery.
+
+**Root cause / gap analysis**:
+- `LocationService._tryGps()` calls `Position.getInfo()` — a passive read of whatever GPS data the system already holds. If GPS radio is off (fresh app launch, watch just woken), this returns `null` and times display as "--:--".
+- `Position.enableLocationEvents()` is the correct Toybox API to **actively turn on GPS hardware** and receive a callback when a fix arrives. It is not called anywhere in the codebase.
+- `LocationService.initialize()` does not load `LocationCache`; cached location from a previous session is discarded on each start, causing "--:--" even when a valid 1-hour-old fix exists.
+
+**Independent Test**: Launch the app in the Connect IQ Simulator with GPS disabled initially. Set a GPS location using the simulator's "GPS → Set Location" panel 3 seconds after launch. Verify that (a) Row 2 in `TimeDisplayView` transitions from "--:--" to computed sunrise/sunset within one second of the GPS location being set, and (b) a "GPS: acquiring…" indicator is visible in the bottom row while GPS is being acquired, replaced by location quality information after the fix.
+
+- [x] T094 [SYNC] [US2] Update `src/services/LocationService.mc` — (1) add `_isGpsTracking as Lang.Boolean` field, initialised to `false`; (2) update `initialize()` to call a new private `_loadFromCache() as Void` helper that checks `new LocationCache().hasValidCache()` and, if true, reads `getCachedLatitude()` / `getCachedLongitude()`, sets `_lat`, `_lon`, `_hasLocation = true`, `_source = "cache"`, so astronomical calculations start immediately on app load with last-known location; (3) add `startGpsTracking(callback as Lang.Method) as Void` that calls `Position.enableLocationEvents(Position.LOCATION_ONE_SHOT, callback)` in a try/catch (log on error) and sets `_isGpsTracking = true`; (4) add `stopGpsTracking() as Void` that wraps `Position.disableLocationEvents()` in a try/catch and sets `_isGpsTracking = false`; (5) add `isGpsTracking() as Lang.Boolean` accessor. Add `using Toybox.Position` import.
+
+- [x] T095 [SYNC] [US2] Update `src/services/AstronomicalService.mc` — (1) add `startGpsTracking() as Void` that calls `_locationService.startGpsTracking(method(:_onGpsLocationUpdate))`; (2) add `_onGpsLocationUpdate(info as Position.Info) as Void`: guard `info != null && info.position != null`; extract lat/lon from `info.position.toDegrees()`; validate with `LocationValidator.isValidLatitude/Longitude()`; call `_locationService.setLocation(lat, lon)`; save to `new LocationCache().save(lat, lon)` (persists for SC-003 24h fallback); call `_calculationCache.clear()` to invalidate stale same-day cached result; call `_ensureCalculated()` to recompute sunrise/sunset with fresh coordinates; call `WatchUi.requestUpdate()` to trigger immediate display refresh; log "AstronomicalService: GPS fix received" at info level; (3) add `stopGpsTracking() as Void` that delegates to `_locationService.stopGpsTracking()`; (4) add `isGpsTracking() as Lang.Boolean` that delegates to `_locationService.isGpsTracking()`. Add `using Toybox.Position` and `using Toybox.WatchUi` imports.
+
+- [x] T096 [SYNC] [US2] Update `src/ui/TimeDisplayView.mc` — (1) in `onShow()`: after starting the refresh timer, call `if (_astronomicalService != null) { _astronomicalService.startGpsTracking(); }` to activate GPS hardware on view foreground; (2) in `onHide()`: add `if (_astronomicalService != null) { _astronomicalService.stopGpsTracking(); }` to release GPS radio when view leaves screen; (3) in `_drawAllRows()`: replace the single location indicator block at the bottom with a three-state check — state A: `!_shabbatService.hasLocation() && _astronomicalService != null && _astronomicalService.isGpsTracking()` → draw `Rez.Strings.GpsAcquiring` in `Graphics.COLOR_YELLOW`, state B: `!_shabbatService.hasLocation()` → draw `Rez.Strings.LocationNeeded` in `Graphics.COLOR_DK_RED` (existing behaviour), state C: polar region warning (existing behaviour). The GPS-acquiring indicator reassures the user that times will appear shortly.
+
+- [x] T097 [P] [ASYNC] [US2] Add string resource `GpsAcquiring` with value `"GPS: acquiring\u2026"` to `resources/strings/strings.xml` — used by `TimeDisplayView._drawAllRows()` GPS-acquiring indicator (state A in T096). Place alongside the existing `LocationNeeded` key for consistency.
+
+- [x] T098 [P] [ASYNC] [US2] Update `specs/003-shabbat-time-display/spec.md` — (1) add to FR-002 and FR-003: "System MUST activate GPS via `Position.enableLocationEvents(LOCATION_ONE_SHOT, callback)` on app foreground to acquire a current location fix for astronomical calculations"; (2) add acceptance scenario to US2: "Given the app has just launched, When the device acquires a GPS fix, Then the displayed sunrise/sunset times update from '--:--' to computed values within 500ms (SC-004)"; (3) add to the Edge Cases section: "While GPS is acquiring on first launch, previously cached location data (up to 24h old, SC-003) is used to show preliminary times immediately".
+
+**Checkpoint**: Launch the app in the Connect IQ Simulator; confirm Row 2 shows "--:--" initially (if no cache) with "GPS: acquiring…" indicator, then transitions to actual sunrise/sunset once the simulated GPS location is set.
+
+---
+
+## Phase 14 — Dependencies & Execution Order
+
+- **T094** (LocationService GPS enable + cache restore) — no dependencies, start immediately
+- **T095** (AstronomicalService GPS lifecycle) — depends on T094 complete (calls `LocationService.startGpsTracking()`)
+- **T096** (TimeDisplayView GPS wiring) — depends on T095 (calls `AstronomicalService.startGpsTracking()`); depends on T097 (uses `Rez.Strings.GpsAcquiring`)
+- **T097** (string resource) — no dependencies, run in parallel with T094/T095
+- **T098** (spec update) — no dependencies, parallel
+
+**Recommended sequence**:
+```
+T094 → T095 → T096 (sequential, same dependency chain)
+T097 [P]          (strings.xml, parallel with T094)
+T098 [P]          (spec.md, parallel)
+```
+
+---
+
+## Updated Dependencies (Phases 9–14)
+
+- **Phase 9 (T071–T075)**: Complete ✅
+- **Phase 10 (T076–T082)**: Complete ✅
+- **Phase 11 (T083–T085)**: Complete ✅
+- **Phase 12 (T086–T088)**: Complete ✅
+- **Phase 13 (T089–T093)**: Complete ✅
+- **Phase 14 (T094–T098)**: New — GPS on-load. T094 before T095 before T096; T097 and T098 parallel.
+
+### User Story Mapping (full)
+
+- **US1 (Basic Time Display)**: T001–T020 (Phase 1–2) ✅
+- **US2 (Astronomical Calculations)**: T021–T040 (Phase 3–4) ✅ + T071–T075 (Phase 9) ✅ + **T094–T098 (Phase 14) NEW**
+- **US3 (Shabbat Times)**: T041–T060 (Phase 5–7) ✅ + T076–T088 (Phase 10–12) ✅
+- **US4 (Battery Conservation)**: T061–T070 (Phase 8) ✅ + T089–T093 (Phase 13) ✅
+
+---
+
+## Phase 15: US1 Polish — Display Label "Shabbat" Instead of "ShabbatMode"
+
+**User Story**: US1 — Basic Time Display (Priority: P1)  
+**Goal**: Every user-visible text surface that currently shows "ShabbatMode" must be updated to "Shabbat". The Shabbat-active label (`Rez.Strings.ShabbatActive`) already reads "Shabbat" correctly; only the non-Shabbat/info display paths are affected.
+
+**Root cause**:
+- `resources/strings/strings.xml` `AppName` = `"ShabbatMode"` — rendered in `TimeDisplayView` Row 0 when Shabbat is not active, and in `MainView` countdown/info display via `Rez.Strings.AppName`.
+- `resources/strings/strings.xml` `WelcomeTitle` = `"Welcome to ShabbatMode"` — shown on first-run overlay.
+- `src/models/Configuration.mc` default `app_name` = `"ShabbatMode"` — returned by `ConfigService.getAppName()`, which is used as the app-name text component in `MainView.setupComponents()`.
+
+**All other "Shabbat"-state labels** (`ShabbatActive`, `ShabbatModeTitle`, `ShabbatActiveLabel`) already read `"Shabbat"` — no changes needed there.
+
+**Independent Test**: Launch the app in the Connect IQ Simulator. Verify that Row 0 of `TimeDisplayView` shows `"Shabbat"` (not `"ShabbatMode"`) at all times — both during and outside Shabbat hours.
+
+- [x] T099 [P] [ASYNC] [US1] Update `resources/strings/strings.xml` — change `AppName` value from `"ShabbatMode"` to `"Shabbat"`; change `WelcomeTitle` value from `"Welcome to ShabbatMode"` to `"Welcome to Shabbat"`. No code changes required; the existing `Rez.Strings.AppName` reference in `TimeDisplayView` and `MainView` will automatically display the updated value.
+
+- [x] T100 [P] [ASYNC] [US1] Update `src/models/Configuration.mc` — change the default value for `app_name` in the defaults dictionary from `"ShabbatMode"` to `"Shabbat"` so that `ConfigService.getAppName()` returns `"Shabbat"` on fresh installs and after a settings reset. This aligns the code-level default with T099's resource string change.
+
+**Checkpoint**: After T099, build and run in the simulator — the top label on the main display reads `"Shabbat"` in all modes. `WelcomeTitle` on first-run shows `"Welcome to Shabbat"`.
+
+---
+
+## Phase 15 — Dependencies & Execution Order
+
+- **T099** (string resource) — no dependencies; can run immediately  
+- **T100** (Configuration.mc default) — no dependencies; fully parallel with T099 (different file)
+
+**Recommended sequence**:
+```
+T099 [P]  (resources/strings/strings.xml)
+T100 [P]  (src/models/Configuration.mc)
+(both can run concurrently)
+```
+
+---
+
+## Updated Dependencies (Phases 9–15)
+
+- **Phase 9 (T071–T075)**: Complete ✅
+- **Phase 10 (T076–T082)**: Complete ✅
+- **Phase 11 (T083–T085)**: Complete ✅
+- **Phase 12 (T086–T088)**: Complete ✅
+- **Phase 13 (T089–T093)**: Complete ✅
+- **Phase 14 (T094–T098)**: GPS on app load — pending
+- **Phase 15 (T099–T100)**: Display label fix — no dependencies, can run alongside Phase 14
+
+### User Story Mapping (full, updated)
+
+- **US1 (Basic Time Display)**: T001–T020 (Phase 1–2) ✅ + **T099–T100 (Phase 15) NEW**
+- **US2 (Astronomical Calculations)**: T021–T040 (Phase 3–4) ✅ + T071–T075 (Phase 9) ✅ + T094–T098 (Phase 14) new
+- **US3 (Shabbat Times)**: T041–T060 (Phase 5–7) ✅ + T076–T088 (Phase 10–12) ✅
+- **US4 (Battery Conservation)**: T061–T070 (Phase 8) ✅ + T089–T093 (Phase 13) ✅
+
+---
+
+## Phase 16: US1 Polish — Remove Seconds from All Time Displays (Always HH:MM)
+
+**User Story**: US1 — Basic Time Display (Priority: P1)  
+**Goal**: The current time shown on screen must never include seconds in any display state. Currently `TimeDisplayView` uses a Shabbat-conditional — showing `HH:MM:SS` outside Shabbat and `HH:MM` during Shabbat — and `ClockComponent` defaults `_showSeconds = true`. Both must unconditionally use `HH:MM`.
+
+**Root cause**:
+- `src/ui/TimeDisplayView.mc` lines 168–170: `isShabbat ? TimeFormatter.currentTimeHHMM() : TimeFormatter.currentTimeHHMMSS()` — seconds still appear outside Shabbat.
+- `src/ui/components/ClockComponent.mc` line 37–38: `if (_showSeconds) { return TimeFormatter.currentTimeHHMMSS(); }` — `_showSeconds` defaults to `true`, so `HH:MM:SS` is the default output.
+- `resources/strings/strings.xml` `TimeFormat` = `"HH:MM:SS"` — metadata string is stale.
+
+**Note**: Phase 13 (T089–T092) previously suppressed seconds *during Shabbat*. This phase removes them *universally*, making the Shabbat-conditional in `TimeDisplayView` redundant for the time format.
+
+**Independent Test**: Launch the app in the Connect IQ Simulator with any GPS location. At any time of day (Shabbat or not), Row 1 of `TimeDisplayView` displays `HH:MM` with no `:SS` suffix. `ClockComponent.getTimeString()` always returns a 5-character string in `HH:MM` format.
+
+- [x] T101 [ASYNC] [US1] Update `src/ui/TimeDisplayView.mc` — in `_drawAllRows()`, replace the conditional on lines 168–170 with a single unconditional call: `var timeStr = TimeFormatter.currentTimeHHMM();`. Update the layout comment block at the top of `_drawAllRows()` (line 138) from `"Row 1 – current time HH:MM:SS"` to `"Row 1 – current time HH:MM"`.
+
+- [x] T102 [P] [ASYNC] [US1] Update `src/ui/components/ClockComponent.mc` — in `getTimeString()`: remove the `if (_showSeconds)` branch and always `return TimeFormatter.currentTimeHHMM()`. Change `_showSeconds` default in `initialize()` from `true` to `false` so the field remains in sync if callers still use `setShowSeconds()` or `setShabbatMode()`. Update the class-level doc comment from `"Displays the current local time as 'HH:MM:SS' (or 'HH:MM' when compact)"` to `"Displays the current local time as 'HH:MM' — seconds are never shown"`.
+
+- [x] T103 [P] [ASYNC] [US1] Update `resources/strings/strings.xml` — change `TimeFormat` value from `"HH:MM:SS"` to `"HH:MM"` to keep the metadata string consistent with the actual display format.
+
+**Checkpoint**: Build and run in simulator — regardless of Shabbat state, the large time display in Row 1 reads `HH:MM` only. `ClockComponent.getTimeString()` returns a 5-character string at all times.
+
+---
+
+## Phase 16 — Dependencies & Execution Order
+
+- **T101** (`TimeDisplayView.mc` display fix) — no dependencies, start immediately
+- **T102** (`ClockComponent.mc`) — no dependencies, fully parallel with T101 (different file)
+- **T103** (`strings.xml`) — no dependencies, fully parallel with T101 and T102 (different file)
+
+**Recommended sequence**:
+```
+T101 [P]  (src/ui/TimeDisplayView.mc)
+T102 [P]  (src/ui/components/ClockComponent.mc)
+T103 [P]  (resources/strings/strings.xml)
+(all three can run concurrently)
+```
+
+---
+
+## Updated Dependencies (Phases 9–16)
+
+- **Phase 9 (T071–T075)**: Complete ✅
+- **Phase 10 (T076–T082)**: Complete ✅
+- **Phase 11 (T083–T085)**: Complete ✅
+- **Phase 12 (T086–T088)**: Complete ✅
+- **Phase 13 (T089–T093)**: Complete ✅
+- **Phase 14 (T094–T098)**: GPS on app load — pending
+- **Phase 15 (T099–T100)**: Label "Shabbat" fix — pending
+- **Phase 16 (T101–T103)**: Remove seconds universally — no dependencies, can run alongside Phases 14–15
+
+### User Story Mapping (full, updated)
+
+- **US1 (Basic Time Display)**: T001–T020 ✅ + T099–T100 (Phase 15) + **T101–T103 (Phase 16) NEW**
+- **US2 (Astronomical Calculations)**: T021–T040 ✅ + T071–T075 ✅ + T094–T098 (Phase 14)
+- **US3 (Shabbat Times)**: T041–T060 ✅ + T076–T088 ✅
+- **US4 (Battery Conservation)**: T061–T070 ✅ + T089–T093 ✅
+
+---
+
+## Phase 17: New US5 — Parashat HaShavua Display
+
+**User Story**: US5 — Parashat HaShavua Display (Priority: P3)  
+**Goal**: Display the current week's Torah portion (Parashat HaShavua) on the main screen so that the user always knows which parasha is being read this Shabbat. Supports Israel vs Diaspora calendar differences (configurable via the existing `TimeConfiguration.region` setting).
+
+**Why this feature belongs here**: The app already shows all time-critical Shabbat information. The weekly parasha is the natural next piece of Shabbat-related context a user wants at a glance without reaching for their phone.
+
+**Design decisions**:
+- **No network calls**: Parasha is calculated purely from the Hebrew date, derived offline from the Gregorian date. Aligns with Principle V (no network during Shabbat) and research §8 (no Hebrew calendar library available in CIQ).
+- **Algorithm**: Maimonides' *Kiddush HaChodesh* calendar algorithm (standard in Jewish calendar software). The Hebrew year type (deficient 353/383, regular 354/384, complete 355/385 days) determines which weeks are doubled parashiyot in the Diaspora.
+- **Israel vs Diaspora**: `TimeConfiguration.getRegion()` already returns `"israel"` or `"diaspora"`. When Israel diverges (typically after Pesach in non-leap years), `ParashaService` consults an offset table.
+- **Data type**: Julian Day Numbers use `Lang.Long` to avoid 32-bit overflow (Hebrew epoch JD ≈ 347,996).
+- **Caching**: Parasha index is recomputed at most once per Hebrew week (when `dayId / 7` changes).
+- **Screen layout**: `TimeDisplayView` currently has 5 rows across 9ths of screen height. A 6th row (parasha) is added by compressing to 10ths and using `FONT_TINY`.
+
+**54 standard parashiyot** + 7 double-parasha strings needed (Vayakhel-Pekudei, Tazria-Metzora, Achrei Mot-Kedoshim, Behar-Bechukotai, Chukat-Balak, Matot-Masei, Nitzavim-Vayelech).
+
+**Independent Test**: Set the simulator clock to a known date (e.g., Shabbat April 18, 2026 = 20 Nisan 5786 = week of Parashat Shemini). Verify `ParashaService.getParashaName()` returns "Shemini". Cross-reference against any online Jewish calendar (hebcal.com, chabad.org, etc.).
+
+---
+
+- [x] T104 [SYNC] [US5] Create `src/services/HebrewCalendarService.mc` — implement the Maimonides Hebrew calendar algorithm as a static utility class. Required static methods: `julianDayFromGregorian(year as Lang.Number, month as Lang.Number, day as Lang.Number) as Lang.Long` (standard proleptic Gregorian → JD formula using Long arithmetic); `elapsedDaysHebrewYear(year as Lang.Number) as Lang.Long` (days from Hebrew epoch 1 Tishrei 1 AM using the standard molad formula: `(235*year - 234) / 19 * 29765433 / 1080 + ...` — use integer arithmetic to avoid float precision loss); `isHebrewLeapYear(year as Lang.Number) as Lang.Boolean` (true when `(7 * year + 1) % 19 < 7`); `daysInHebrewYear(year as Lang.Number) as Lang.Number` (difference between `elapsedDaysHebrewYear(year+1)` and `elapsedDaysHebrewYear(year)`); `hebrewYearType(year as Lang.Number) as Lang.Number` (1=deficient 353/383 d, 2=regular 354/384 d, 3=complete 355/385 d — derived from `daysInHebrewYear % 10`); `gregorianToHebrewYear(gregorianYear as Lang.Number, gregorianMonth as Lang.Number, gregorianDay as Lang.Number) as Lang.Number` (Hebrew year for a Gregorian date); `hebrewDayOfYear(gregorianYear as Lang.Number, gregorianMonth as Lang.Number, gregorianDay as Lang.Number) as Lang.Number` (1-based day within the Hebrew year, where day 1 = 1 Tishrei). All arithmetic uses `Lang.Long` for Julian Day values.
+
+- [x] T105 [SYNC] [US5] Create `src/services/ParashaService.mc` — implement parasha lookup on top of `HebrewCalendarService`. Data: `_PARASHA_COUNT = 54`; static `_DIASPORA_SCHEDULE` array of `Lang.Array<Lang.Number>` — one entry per Hebrew year type (deficient regular, regular regular, complete regular, deficient leap, regular leap, complete leap = 6 types), each entry is a 55-element array mapping week-of-year (0-indexed from Rosh Hashana) to parasha index (0–53, or -1 for Yom Tov weeks, or 100+ for combined parashiyot: 100=Vayakhel-Pekudei, 101=Tazria-Metzora, 102=Achrei-Kedoshim, 103=Behar-Bechukotai, 104=Chukat-Balak, 105=Matot-Masei, 106=Nitzavim-Vayelech); `_ISRAEL_SCHEDULE` similar array with Israel adjustments. Public methods: `getParashaIndexForToday(isIsrael as Lang.Boolean) as Lang.Number`; `getParashaStringId(index as Lang.Number) as Lang.String` (returns the `Rez.Strings.Parasha_*` key for `WatchUi.loadResource()`); `getParashaName(isIsrael as Lang.Boolean) as Lang.String` (returns the display string or `"--"` on error). Cache: store `_cachedWeekId as Lang.Number` and `_cachedIndex as Lang.Number`; recompute only when `DateMath.todayDayId() / 7 != _cachedWeekId`. Add `using Toybox.WatchUi` import.
+
+- [x] T106 [P] [ASYNC] [US5] Create `resources/strings/parasha_strings.xml` with all 54 single parasha names as string resources. IDs: `Parasha_Bereshit`, `Parasha_Noach`, `Parasha_LechLecha`, `Parasha_Vayera`, `Parasha_ChayeiSarah`, `Parasha_Toldot`, `Parasha_Vayetzei`, `Parasha_Vayishlach`, `Parasha_Vayeshev`, `Parasha_Miketz`, `Parasha_Vayigash`, `Parasha_Vayechi`, `Parasha_Shemot`, `Parasha_Vaera`, `Parasha_Bo`, `Parasha_Beshalach`, `Parasha_Yitro`, `Parasha_Mishpatim`, `Parasha_Terumah`, `Parasha_Tetzaveh`, `Parasha_KiTisa`, `Parasha_Vayakhel`, `Parasha_Pekudei`, `Parasha_Vayikra`, `Parasha_Tzav`, `Parasha_Shemini`, `Parasha_Tazria`, `Parasha_Metzora`, `Parasha_AchreiMot`, `Parasha_Kedoshim`, `Parasha_Emor`, `Parasha_Behar`, `Parasha_Bechukotai`, `Parasha_Bamidbar`, `Parasha_Nasso`, `Parasha_Behaalotecha`, `Parasha_Shelach`, `Parasha_Korach`, `Parasha_Chukat`, `Parasha_Balak`, `Parasha_Pinchas`, `Parasha_Matot`, `Parasha_Masei`, `Parasha_Devarim`, `Parasha_Vaetchanan`, `Parasha_Eikev`, `Parasha_ReEh`, `Parasha_Shoftim`, `Parasha_KiTeitzei`, `Parasha_KiTavo`, `Parasha_Nitzavim`, `Parasha_Vayelech`, `Parasha_Haazinu`, `Parasha_VeZotHaBeracha`. Combined parasha IDs: `Parasha_VayakhlelPekudei` ("Vayakhel-Pekudei"), `Parasha_TazriaMetzora` ("Tazria-Metzora"), `Parasha_AchreiKedoshim` ("Achrei-Kedoshim"), `Parasha_BeharBechukotai` ("Behar-Bechukotai"), `Parasha_ChukatBalak` ("Chukat-Balak"), `Parasha_MatotMasei` ("Matot-Masei"), `Parasha_NitzavimVayelech` ("Nitzavim-Vayelech"). Label: `ParashaLabel` ("Parasha:"). Unavailable: `ParashaUnavailable` ("--").
+
+- [x] T107 [SYNC] [US5] Update `src/ui/TimeDisplayView.mc` — (1) add `_parashaService as ParashaService?` field; initialise with `new ParashaService()` in `initialize()` inside the try block; (2) in `_drawAllRows()`: compress the row layout from 9ths to 10ths to make room — change `row0Y = h / 10`, `row1Y = h * 3 / 10`, `row2Y = h * 5 / 10`, `row3Y = h * 68 / 100`, `row4Y = h * 80 / 100`; add `row5Y = h * 91 / 100`; (3) add Row 5 drawing block after Row 4: read `isIsrael` from `new TimeConfiguration().getRegion().equals("israel")`; call `_parashaService.getParashaName(isIsrael)`; draw in `FONT_TINY`, `COLOR_LT_GRAY` centred at `(cx, row5Y)`; (4) update layout comment block from 5 rows to 6 rows; (5) move the location/polar indicator from `h - h/14` to `row5Y` (it becomes the Row 5 content when location is unavailable — parasha is not shown when GPS is needed).
+
+- [x] T108 [P] [ASYNC] [US5] Add string resources for the Israel/Diaspora region toggle to `resources/strings/shabbat_strings.xml`: `RegionLabel` ("Region:"), `RegionIsrael` ("Israel"), `RegionDiaspora` ("Diaspora"). These will be used by the settings screen toggle added in T109.
+
+- [x] T109 [ASYNC] [US5] Update `src/ui/TimeSettingsView.mc` — add a fourth settings item "Region: Israel / Diaspora" below the existing tzais-method item: read `new TimeConfiguration().getRegion()`; display `(Rez.Strings.RegionLabel) + " " + (region.equals("israel") ? Rez.Strings.RegionIsrael : Rez.Strings.RegionDiaspora)`; on SELECT cycle between `"israel"` and `"diaspora"` via `config.setRegion()`; save via `ConfigService`. Depends on T108 (string resources).
+
+- [x] T110 [P] [ASYNC] [US5] Update `specs/003-shabbat-time-display/spec.md` — add **US5: Parashat HaShavua Display (Priority: P3)**: "As a practicing Jewish user, I want to see the current week's Torah portion on the main screen so I always know which parasha is being read this Shabbat." Acceptance scenarios: (1) given GPS/date known, app shows correct parasha name on main screen; (2) given region = Israel and post-Pesach week where Israel and Diaspora differ, correct Israel parasha is shown; (3) given parasha calculation unavailable, "--" is shown gracefully. Add **FR-015**: "System MUST display the current week's Parashat HaShavua on the main screen, computed offline from the Hebrew date." Add **FR-016**: "System MUST support Israel vs Diaspora parasha calendar differences, selectable via the region setting."
+
+- [x] T111 [P] [ASYNC] [US5] Update `specs/003-shabbat-time-display/research.md` — add **§10: Hebrew Calendar & Parasha Algorithm**: document the Maimonides molad-based calendar algorithm used by `HebrewCalendarService`; document the 6 Hebrew year types (deficient/regular/complete × regular/leap) and how they determine which parasha weeks are doubled in the Diaspora; list the 7 possible double-parasha combinations and which year types trigger each; document Israel vs Diaspora divergence (typically 1–4 weeks apart after Pesach in certain years); add cross-reference table: "KosherJava `JewishCalendar.getParashahIndex()`" → `ParashaService.getParashaIndexForToday()`.
+
+**Checkpoint**: Set simulator date to Shabbat April 18, 2026 (20 Nisan 5786 = Shemini week). Verify Row 5 of `TimeDisplayView` shows "Parasha: Shemini". Toggle region to Israel; verify same result (this week they match). Set date to April 25, 2026 (Tazria-Metzora in Diaspora, Tazria in Israel); verify correct split.
+
+---
+
+## Phase 17 — Dependencies & Execution Order
+
+- **T104** (`HebrewCalendarService`) — no dependencies, start immediately; foundation for T105
+- **T105** (`ParashaService`) — depends on T104 complete (uses `HebrewCalendarService` and `DateMath`)
+- **T106** (parasha string resources) — no dependencies, parallel with T104/T105
+- **T107** (`TimeDisplayView` UI) — depends on T105 complete (calls `ParashaService`) + T106 complete (uses `Rez.Strings.Parasha_*`)
+- **T108** (region strings) — no dependencies, parallel
+- **T109** (`TimeSettingsView` toggle) — depends on T108 (uses `Rez.Strings.RegionLabel`)
+- **T110** (spec.md) — no dependencies, parallel
+- **T111** (research.md) — no dependencies, parallel
+
+**Recommended sequence**:
+```
+T104 → T105 → T107 (sequential core chain)
+T106 [P]           (resources/strings/parasha_strings.xml, parallel with T104)
+T108 [P]           (shabbat_strings.xml, parallel)
+  → T109           (TimeSettingsView, after T108)
+T110 [P]           (spec.md, parallel)
+T111 [P]           (research.md, parallel)
+```
+
+---
+
+## Updated Dependencies (Phases 9–17)
+
+- **Phase 9–13**: Complete ✅
+- **Phase 14 (T094–T098)**: GPS on app load — pending
+- **Phase 15 (T099–T100)**: Label "Shabbat" fix — pending
+- **Phase 16 (T101–T103)**: Remove seconds — pending
+- **Phase 17 (T104–T111)**: Parashat HaShavua display — new, no dependencies on Phases 14–16
+
+### User Story Mapping (final)
+
+- **US1 (Basic Time Display)**: T001–T020 ✅ + T099–T100 + T101–T103
+- **US2 (Astronomical Calculations)**: T021–T040 ✅ + T071–T075 ✅ + T094–T098
+- **US3 (Shabbat Times)**: T041–T060 ✅ + T076–T088 ✅
+- **US4 (Battery Conservation)**: T061–T070 ✅ + T089–T093 ✅
+- **US5 (Parashat HaShavua)**: **T104–T111 NEW**

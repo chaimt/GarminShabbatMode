@@ -8,6 +8,7 @@ using Toybox.System;
 //   • End-of-Shabbat offset in minutes (used when tzais method = fixed_minutes)
 //   • Tzais method: fixed_minutes / degrees_8_5 (Geonim 8.5°) / degrees_7_083 (Geonim 7°)
 //   • Time format (12h / 24h)
+//   • Region: Israel / Diaspora (affects Parashat HaShavua calendar — FR-016)
 //
 // Navigation: UP/DOWN cycle through settings items, SELECT toggles/increments.
 class TimeSettingsView extends WatchUi.View {
@@ -17,7 +18,8 @@ class TimeSettingsView extends WatchUi.View {
     private const ITEM_END_OFFSET       = 1;
     private const ITEM_TZAIS_METHOD     = 2;
     private const ITEM_TIME_FORMAT      = 3;
-    private const ITEM_COUNT            = 4;
+    private const ITEM_REGION           = 4;
+    private const ITEM_COUNT            = 5;
 
     // Ordered tzais method values matching TzaisFixed / TzaisGeonim8_5 / TzaisGeonim7_083
     private const TZAIS_METHODS = ["fixed_minutes", "degrees_8_5", "degrees_7_083"];
@@ -89,6 +91,10 @@ class TimeSettingsView extends WatchUi.View {
                 var fmt = _config.getTimeFormat();
                 _config.setTimeFormat(fmt == 24 ? 12 : 24);
                 break;
+            case ITEM_REGION:
+                var region = _config.getRegion();
+                _config.setRegion(region.equals("israel") ? "diaspora" : "israel");
+                break;
         }
         WatchUi.requestUpdate();
     }
@@ -117,6 +123,10 @@ class TimeSettingsView extends WatchUi.View {
         if (tzaisMethod.equals("degrees_8_5"))   { tzaisLabel = WatchUi.loadResource(Rez.Strings.TzaisGeonim8_5)   as Lang.String; }
         if (tzaisMethod.equals("degrees_7_083")) { tzaisLabel = WatchUi.loadResource(Rez.Strings.TzaisGeonim7_083) as Lang.String; }
 
+        var regionName = _config.getRegion().equals("israel")
+            ? (WatchUi.loadResource(Rez.Strings.RegionIsrael) as Lang.String)
+            : (WatchUi.loadResource(Rez.Strings.RegionDiaspora) as Lang.String);
+
         var labels = [
             Lang.format(WatchUi.loadResource(Rez.Strings.CandlesSettingFormat) as Lang.String,
                 [_config.getCandleLightingOffset().format("%d")]),
@@ -124,7 +134,8 @@ class TimeSettingsView extends WatchUi.View {
                 [_config.getShabbatEndOffset().format("%d")]),
             (WatchUi.loadResource(Rez.Strings.TzaisMethodLabel) as Lang.String) + " " + tzaisLabel,
             Lang.format(WatchUi.loadResource(Rez.Strings.TimeFormatSettingFormat) as Lang.String,
-                [_config.getTimeFormat().format("%d")])
+                [_config.getTimeFormat().format("%d")]),
+            (WatchUi.loadResource(Rez.Strings.RegionLabel) as Lang.String) + " " + regionName
         ];
 
         for (var i = 0; i < ITEM_COUNT; i++) {

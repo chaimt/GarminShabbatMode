@@ -5,6 +5,13 @@ using Toybox.System;
 // Acquires and caches the device's current GPS coordinates.
 // Falls back to manually configured coordinates when GPS is unavailable.
 //
+// On initialize(), restores the last-known location from LocationCache (up to
+// 24 h old) so astronomical calculations can begin immediately on app start.
+//
+// Active GPS acquisition: call startGpsTracking(callback) to turn on the GPS
+// radio via Position.enableLocationEvents(LOCATION_ONE_SHOT, ...).  The radio
+// turns off automatically after the first fix is delivered to the callback.
+//
 // Battery optimisation: GPS is only actively queried once per
 // UPDATE_INTERVAL_SECONDS (default 5 minutes) to avoid continuous
 // radio-on drain.  Between polls the last known coordinates are served
@@ -18,6 +25,7 @@ class LocationService {
     private var _hasLocation as Lang.Boolean;
     private var _source as Lang.String;
     private var _lastRefreshTimer as Lang.Number; // System.getTimer() value
+    private var _isGpsTracking as Lang.Boolean;
     private var _logger as Logger?;
 
     function initialize() {
@@ -27,12 +35,15 @@ class LocationService {
         _hasLocation = false;
         _source = "none";
         _lastRefreshTimer = 0;
+        _isGpsTracking = false;
 
         try {
             _logger = new Logger();
         } catch (ex instanceof Lang.Exception) {
             _logger = null;
         }
+
+        _loadFromCache();
     }
 
     // Attempt to acquire a fresh GPS fix; fall back to manual coordinates.
@@ -75,6 +86,40 @@ class LocationService {
         return _source;
     }
 
+    // Actively enable GPS hardware using LOCATION_ONE_SHOT.
+    // The radio fires `callback` once when a fix arrives, then turns off.
+    // callback signature must match Toybox.Position.Info as the sole argument.
+    function startGpsTracking(callback as Lang.Method) as Void {
+        try {
+            Position.enableLocationEvents(Position.LOCATION_ONE_SHOT, callback);
+            _isGpsTracking = true;
+            if (_logger != null) {
+                _logger.info("LocationService: GPS tracking started (ONE_SHOT)");
+            }
+        } catch (ex instanceof Lang.Exception) {
+            _isGpsTracking = false;
+            if (_logger != null) {
+                _logger.warn("LocationService: startGpsTracking failed - " + ex.getErrorMessage());
+            }
+        }
+    }
+
+    // Stop active GPS tracking.
+    // With LOCATION_ONE_SHOT the radio turns off automatically after the first fix,
+    // so no explicit disable API call is needed.  We just clear the tracking flag
+    // so the UI indicator updates correctly.
+    function stopGpsTracking() as Void {
+        _isGpsTracking = false;
+        if (_logger != null) {
+            _logger.info("LocationService: GPS tracking stopped");
+        }
+    }
+
+    // True while a LOCATION_ONE_SHOT request is outstanding.
+    function isGpsTracking() as Lang.Boolean {
+        return _isGpsTracking;
+    }
+
     // Override the GPS poll rate-limit window.
     // BatteryConservationService calls this to extend the interval to 1800 s
     // during Shabbat and restore it to 300 s afterwards.
@@ -98,6 +143,33 @@ class LocationService {
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    // Restore last-known location from persistent cache at startup (SC-003).
+    // Allows astronomical calculations to run immediately without waiting for GPS.
+    private function _loadFromCache() as Void {
+        try {
+            var cache = new LocationCache();
+            if (cache.hasValidCache()) {
+                var lat = cache.getCachedLatitude();
+                var lon = cache.getCachedLongitude();
+                if (LocationValidator.isValidLatitude(lat) &&
+                    LocationValidator.isValidLongitude(lon) &&
+                    (lat != 0.0 || lon != 0.0)) {
+                    _lat = lat;
+                    _lon = lon;
+                    _hasLocation = true;
+                    _source = "cache";
+                    if (_logger != null) {
+                        _logger.info("LocationService: restored from cache " + lat + ", " + lon);
+                    }
+                }
+            }
+        } catch (ex instanceof Lang.Exception) {
+            if (_logger != null) {
+                _logger.warn("LocationService: cache restore failed - " + ex.getErrorMessage());
+            }
+        }
+    }
 
     private function _tryGps() as Lang.Boolean {
         try {

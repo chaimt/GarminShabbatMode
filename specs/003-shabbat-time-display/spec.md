@@ -70,13 +70,32 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 
 ---
 
+---
+
+### User Story 5 - Parashat HaShavua Display (Priority: P3)
+
+As a practicing Jewish user, I want to see the current week's Torah portion (Parashat HaShavua) on the main screen so that I always know which parasha is being read this Shabbat without reaching for my phone.
+
+**Why this priority**: Enhances the core Shabbat experience with contextually relevant Jewish content; depends on the time-display foundation (US1) being complete.
+
+**Independent Test**: Set the simulator date to Shabbat April 18, 2026 (20 Nisan 5786 = week of Parashat Shemini). Verify Row 5 of `TimeDisplayView` displays "Parasha: Shemini". Cross-reference against hebcal.com or chabad.org for the same date.
+
+**Acceptance Scenarios**:
+
+1. **Given** the device date is known, **When** I view the main screen, **Then** the correct weekly parasha name is displayed on the main screen (e.g., "Parasha: Bereshit" during the first week of the Torah cycle)
+2. **Given** the region setting is set to "Israel" and the date falls in a week where Israel and Diaspora read different parashiyot, **When** I view the main screen, **Then** the displayed parasha reflects the Israel calendar
+3. **Given** the parasha calculation fails or it is a Yom Tov week, **When** I view the main screen, **Then** the parasha row shows "--" gracefully with no crash
+
+---
+
 ### Edge Cases
 
-- What happens when location services are unavailable or denied?
+- What happens when location services are unavailable or denied? GPS: acquiring… shown; falls back to LocationCache (24h).
 - How does the system handle timezone changes or travel?
 - What occurs when astronomical calculations fail due to extreme latitudes (polar regions)?
 - How does the app handle date transitions and time zone changes?
 - How does the app detect Shabbat start/end reliably enough to enter and exit battery conservation mode?
+- While GPS is acquiring on first launch, previously cached location data (up to 24h old, SC-003) is used to show preliminary times immediately.
 
 ## Requirements *(mandatory)*
 
@@ -96,6 +115,9 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **FR-012**: System MUST display a simplified, low-refresh-rate layout during battery conservation mode, visually inspired by a minimal Do Not Disturb style screen; the time display MUST show HH:MM format only — seconds MUST NOT be displayed during any Shabbat display mode, preventing unnecessary 1-second redraw cycles
 - **FR-013**: System MUST display "Shabbat" as the mode label at all times (both during normal operation and battery conservation mode)
 - **FR-014**: System MUST support degree-based end-of-Shabbat calculation (solar zenith angle method) as a user-selectable alternative to fixed-minute offsets; supported options MUST include Tzais Geonim 8.5° (zenith 98.5°) and Tzais Geonim 7.083° (zenith 97.083°), matching the KosherJava `getTzaisGeonim8Point5Degrees()` and `getTzaisGeonim7Point083Degrees()` reference implementations
+- **FR-015**: System MUST display the current week's Parashat HaShavua on the main screen, computed offline from the Hebrew date (no network calls required); show "--" gracefully when unavailable
+- **FR-016**: System MUST support Israel vs Diaspora parasha calendar differences, selectable via the region setting (`TimeConfiguration.region`)
+- **FR-017**: System MUST activate GPS via `Position.enableLocationEvents(LOCATION_ONE_SHOT, callback)` on app foreground to acquire a current location fix for astronomical calculations; display "GPS: acquiring…" while the fix is in progress
 
 ### Key Entities *(include if feature involves data)*
 
@@ -103,7 +125,9 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **Location**: User's geographic coordinates for calculations
 - **AstronomicalData**: Sunrise and sunset calculations
 - **ShabbatTimes**: Candle lighting and end of Shabbat calculations
-- **TimeConfiguration**: User preferences for time offsets, tzais calculation method, and display formats
+- **TimeConfiguration**: User preferences for time offsets, tzais calculation method, display formats, and region (Israel/Diaspora)
+- **HebrewCalendarService**: Gregorian → Hebrew date conversion (Maimonides algorithm)
+- **ParashaService**: Hebrew date → Parashat HaShavua lookup (offline, schedule tables for 6 Hebrew year types)
 
 ## Success Criteria *(mandatory)*
 

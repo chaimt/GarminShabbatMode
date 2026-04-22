@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <strings>
     <!-- Application Info -->
-    <string id="AppName">ShabbatMode</string>
+    <string id="AppName">Shabbat</string>
     <string id="AppVersion">1.0.0</string>
     <string id="AppDescription">Garmin application for Shabbat observance</string>
 
@@ -13,12 +13,12 @@
 
     <!-- First Run Experience -->
     <string id="FirstRunMessage">Welcome! Press SELECT to continue</string>
-    <string id="WelcomeTitle">Welcome to ShabbatMode</string>
+    <string id="WelcomeTitle">Welcome to Shabbat</string>
     <string id="FirstRunComplete">Setup complete</string>
 
     <!-- Time Display -->
     <string id="CurrentTime">Current Time</string>
-    <string id="TimeFormat">HH:MM:SS</string>
+    <string id="TimeFormat">HH:MM</string>
     <string id="UnknownTime">--:--:--</string>
 
     <!-- Navigation -->
@@ -56,6 +56,7 @@
     <string id="DeviceInfo">Device Info</string>
     <string id="LocationRequired">Location Required</string>
     <string id="LocationUnavailable">Location Unavailable</string>
+    <string id="GpsAcquiring">GPS: acquiring&#x2026;</string>
 
     <!-- Future Placeholders -->
     <string id="SunriseSunset">Sunrise/Sunset</string>

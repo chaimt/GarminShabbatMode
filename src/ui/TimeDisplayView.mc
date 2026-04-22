@@ -15,6 +15,7 @@ class TimeDisplayView extends WatchUi.View {
     private var _astronomicalService as AstronomicalService?;
     private var _timezoneService as TimezoneService?;
     private var _conservationService as BatteryConservationService?;
+    private var _parashaService as ParashaService?;
     private var _logger as Logger?;
     private var _updateTimer as Timer.Timer?;
     private var _initialized as Lang.Boolean;
@@ -38,6 +39,7 @@ class TimeDisplayView extends WatchUi.View {
             _shabbatService = new ShabbatWindowService();
             _astronomicalService = new AstronomicalService();
             _timezoneService = new TimezoneService();
+            _parashaService = new ParashaService();
             // Conservation service: drives timer interval + seconds suppression (T090)
             _conservationService = new BatteryConservationService(_shabbatService, null);
             _conservationService.syncState();
@@ -64,13 +66,19 @@ class TimeDisplayView extends WatchUi.View {
         _updateTimer.start(method(:onTick), intervalMs, true);
         if (_astronomicalService != null) {
             _astronomicalService.refresh();
+            // Actively enable GPS hardware to acquire a fresh location fix (T094/T095).
+            // LOCATION_ONE_SHOT turns off automatically after the first fix.
+            _astronomicalService.startGpsTracking();
         }
     }
 
-    // Stop timer when the view is hidden to preserve battery.
+    // Stop timer and GPS when the view is hidden to preserve battery.
     function onHide() as Void {
         if (_updateTimer != null) {
             _updateTimer.stop();
+        }
+        if (_astronomicalService != null) {
+            _astronomicalService.stopGpsTracking();
         }
     }
 
@@ -132,24 +140,27 @@ class TimeDisplayView extends WatchUi.View {
     // Drawing
     // -------------------------------------------------------------------------
 
-    // Lay out 5 rows evenly across the screen height.
+    // Lay out 6 rows across the screen height.
     //
-    //  Row 0 – label "Shabbat" or "ShabbatMode"  (small, top)
-    //  Row 1 – current time HH:MM:SS              (large, prominent)
-    //  Row 2 – Sunrise / Sunset pair              (small)
-    //  Row 3 – Candle lighting                    (small)
-    //  Row 4 – Shabbat ends                       (small)
+    //  Row 0 – label "Shabbat"          (small, top)
+    //  Row 1 – current time HH:MM       (large, prominent)
+    //  Row 2 – Sunrise / Sunset pair    (small)
+    //  Row 3 – Candle lighting          (small)
+    //  Row 4 – Shabbat ends             (small)
+    //  Row 5 – Parashat HaShavua        (tiny, bottom)
+    //          or GPS-acquiring / location-needed indicator
     private function _drawAllRows(dc as Graphics.Dc) as Void {
         var w  = _screenWidth;
         var h  = _screenHeight;
         var cx = w / 2;
 
-        // Row vertical centres (distribute across the screen)
-        var row0Y = h / 9;
-        var row1Y = h * 3 / 9;
-        var row2Y = h * 5 / 9;
-        var row3Y = h * 7 / 9;
-        var row4Y = h * 8 / 9;
+        // Row vertical centres (10ths layout to fit 6 rows)
+        var row0Y = h / 10;
+        var row1Y = h * 3 / 10;
+        var row2Y = h * 5 / 10;
+        var row3Y = h * 68 / 100;
+        var row4Y = h * 80 / 100;
+        var row5Y = h * 91 / 100;
 
         var isShabbat = (_shabbatService != null && _shabbatService.isShabbat());
 
@@ -162,14 +173,9 @@ class TimeDisplayView extends WatchUi.View {
         dc.drawText(cx, row0Y, Graphics.FONT_SMALL, modeLabel,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
-        // ── Row 1: Current time ──────────────────────────────────────────────
-        // Suppress seconds during Shabbat: displaying :SS forces 1-second redraws
-        // which drain battery; at 30 s refresh the seconds digit would be stale anyway.
-        var timeStr = isShabbat
-            ? TimeFormatter.currentTimeHHMM()
-            : TimeFormatter.currentTimeHHMMSS();
+        // ── Row 1: Current time HH:MM (seconds never shown) ─────────────────
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, row1Y, Graphics.FONT_LARGE, timeStr,
+        dc.drawText(cx, row1Y, Graphics.FONT_LARGE, TimeFormatter.currentTimeHHMM(),
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ── Row 2: Sunrise / Sunset ──────────────────────────────────────────
@@ -222,20 +228,55 @@ class TimeDisplayView extends WatchUi.View {
             (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as Lang.String) + ": " + endStr,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
-        // ── Location / data quality indicator ────────────────────────────────
+        // ── Row 5: Parashat HaShavua / location status ───────────────────────
+        // Priority: location/GPS status warnings override the parasha display.
         if (_shabbatService != null && !_shabbatService.hasLocation()) {
-            dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h - h / 14, Graphics.FONT_TINY,
-                WatchUi.loadResource(Rez.Strings.LocationNeeded) as Lang.String,
-                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            if (_astronomicalService != null && _astronomicalService.isGpsTracking()) {
+                // GPS is actively acquiring a fix — reassure the user
+                dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(cx, row5Y, Graphics.FONT_TINY,
+                    WatchUi.loadResource(Rez.Strings.GpsAcquiring) as Lang.String,
+                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            } else {
+                // No location and GPS not active — prompt user to set location
+                dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(cx, row5Y, Graphics.FONT_TINY,
+                    WatchUi.loadResource(Rez.Strings.LocationNeeded) as Lang.String,
+                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            }
         } else if (_astronomicalService != null && _astronomicalService.hasData()) {
             var data = _astronomicalService.getAstronomicalData();
             if (data != null && data.isPolarRegion()) {
                 dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(cx, h - h / 14, Graphics.FONT_TINY,
+                dc.drawText(cx, row5Y, Graphics.FONT_TINY,
                     WatchUi.loadResource(Rez.Strings.PolarWarning) as Lang.String,
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            } else {
+                // Normal state: show the weekly parasha
+                _drawParasha(dc, cx, row5Y);
             }
+        } else {
+            _drawParasha(dc, cx, row5Y);
+        }
+    }
+
+    // Draw the current week's parasha name at the given position.
+    private function _drawParasha(dc as Graphics.Dc, cx as Lang.Number, y as Lang.Number) as Void {
+        if (_parashaService == null) {
+            return;
+        }
+        try {
+            var config   = new TimeConfiguration();
+            var isIsrael = config.getRegion().equals("israel");
+            var name     = _parashaService.getParashaName(isIsrael);
+            if (!name.equals("--")) {
+                var label = (WatchUi.loadResource(Rez.Strings.ParashaLabel) as Lang.String) + " " + name;
+                dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(cx, y, Graphics.FONT_TINY, label,
+                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            }
+        } catch (ex instanceof Lang.Exception) {
+            // Parasha unavailable — Row 5 stays blank
         }
     }
 
