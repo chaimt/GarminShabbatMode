@@ -1,188 +1,117 @@
-# Tasks: Shabbat Time Display
+# Tasks: Shabbat Time Display — KosherJava Algorithm Port
 
-**Input**: Design documents from `/specs/003-shabbat-time-display/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), context.md
+**Input**: Design documents from `/specs/003-shabbat-time-display/`  
+**Algorithm Reference**: https://kosherjava.com/zmanim-project/  
+**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md (KosherJava mapping), context.md
 
-**Dependencies**: This feature REQUIRES the base application framework to be completed first.
+**Dependencies**: Base application framework complete. Phases 1–8 (T001–T070) complete.  
+**This tasks.md**: Covers the KosherJava port enhancement — generalizing the solar calculator and adding degree-based zmanim.
 
-**Tests**: Tests are OPTIONAL - including timing accuracy and calculation validation tests where appropriate.
+**Tests**: Manual validation against KosherJava reference outputs (see T013, T014).
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by purpose. Foundational refactoring must complete before degree-based zmanim work.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P?] [SYNC/ASYNC] [Story?] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- **[Story]**: Which user story this task belongs to (US2 = Astronomical Calculations, US3 = Shabbat Times)
 - Include exact file paths in descriptions
 
 ## Path Conventions
 
-- **Garmin project enhancement**: Extends existing `src/`, `resources/` structure
-- Time-specific paths: `src/services/`, `src/lib/calculations/`, `src/ui/components/`
+- Garmin project: extends existing `src/`, `resources/`, `specs/` structure
+- Core solar math: `src/services/SunCalculator.mc`
+- Shabbat time logic: `src/services/ShabbatTimeService.mc`, `src/models/ShabbatTimes.mc`
+- Configuration: `src/models/TimeConfiguration.mc`
+- UI: `src/ui/TimeSettingsView.mc`
+- Validation docs: `specs/003-shabbat-time-display/validation/`
 
 ---
 
-## Phase 1: Setup (Time Display Infrastructure)
+## Previously Completed (Phases 1–8, T001–T070)
 
-**Purpose**: Core infrastructure for time-related functionality
-
-**⚠️ PREREQUISITE**: Base application framework must be implemented first
-
-- [x] T001 Create time display directory structure in src/ui/components/
-- [x] T002 [P] Create calculations utilities directory structure in src/lib/calculations/
-- [x] T003 [P] Create formatters directory structure in src/lib/formatters/
-- [x] T004 [P] Create validators directory structure in src/lib/validators/
-- [x] T005 [P] Create cache directory structure in src/cache/
-- [x] T006 [P] Create time-specific resources in resources/layouts/ and resources/strings/
-- [x] T007 [P] Create time-related icons directory in resources/images/time/
-- [x] T008 Update manifest.xml to include location permissions for astronomical calculations
+All initial implementation tasks are complete:
+- Infrastructure setup, time/location services, ClockComponent, SunTimesComponent
+- NOAA-based sunrise/sunset via `SunCalculator.mc` (standard zenith 90.8333°)
+- Fixed-minute candle lighting (sunset − N min) and tzais (sunset + N min)
+- `BatteryConservationService`, always-on display, string resource extraction
 
 ---
 
-## Phase 2: Foundational (Time Services Framework)
+## Phase 9: Foundational — Generalize SunCalculator (KosherJava NOAACalculator Port)
 
-**Purpose**: Core time management and location services that ALL user stories depend on
+**Purpose**: Refactor `SunCalculator.mc` to match the KosherJava `NOAACalculator` pattern: a single parameterized method for any solar zenith angle. This is the prerequisite for all degree-based zmanim (tzais, alos, etc.) and eliminates code duplication between sunrise and sunset.
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**KosherJava equivalents**:
+- `AstronomicalCalendar.getSunriseOffsetByDegrees(zenith)` → parameterized sunrise
+- `AstronomicalCalendar.getSunsetOffsetByDegrees(zenith)` → parameterized sunset
+- `NOAACalculator` — single class handling all solar position math
 
-- [x] T009 Create base TimeInfo model in src/models/TimeInfo.mc
-- [x] T010 [P] Create Location model in src/models/Location.mc
-- [x] T011 [P] Create TimeConfiguration model in src/models/TimeConfiguration.mc
-- [x] T012 Create TimeService for real-time clock management in src/services/TimeService.mc
-- [x] T013 [P] Create LocationService for GPS and location acquisition in src/services/LocationService.mc
-- [x] T014 [P] Create TimezoneService for timezone handling in src/services/TimezoneService.mc
-- [x] T015 [P] Create LocationCache for cached location data in src/cache/LocationCache.mc
-- [x] T016 [P] Create TimeFormatter for time string formatting in src/lib/formatters/TimeFormatter.mc
-- [x] T017 [P] Create LocationValidator for GPS coordinate validation in src/lib/validators/LocationValidator.mc
+- [ ] T071 [SYNC] Extract shared solar position intermediate values from `SunCalculator.calculateSunsetUTC()` into a private static `_computeSolarPosition(n as Lang.Float)` helper in `src/services/SunCalculator.mc` that returns a dictionary with keys `t`, `delta`, `EqTime` (Julian century, solar declination, equation of time). Eliminates the ~50-line duplicate block copied into `AstronomicalService._calculateSunriseUTC()`.
 
-**Checkpoint**: Time and location foundation ready - user story implementation can now begin
+- [ ] T072 [SYNC] Add `GEOMETRIC_ZENITH`, `CIVIL_ZENITH`, `NAUTICAL_ZENITH`, `ASTRONOMICAL_ZENITH` constants to `src/services/SunCalculator.mc`, matching KosherJava `AstronomicalCalendar` constants (90.0°, 96.0°, 102.0°, 108.0°). Add doc comment: `// KosherJava: AstronomicalCalendar.GEOMETRIC_ZENITH`.
 
----
+- [ ] T073 [SYNC] Add `calculateSunsetAtZenithUTC(lat as Lang.Float, lon as Lang.Float, n as Lang.Float, zenithDegrees as Lang.Float) as Lang.Number?` static method to `src/services/SunCalculator.mc`. Implementation: replace the hard-coded `Math.toRadians(-0.8333)` hour-angle check with `Math.toRadians(90.0 - zenithDegrees)`. Standard sunset remains `calculateSunsetAtZenithUTC(lat, lon, n, GEOMETRIC_ZENITH + 0.8333)`. KosherJava equivalent: `NOAACalculator.getUTCNoon()` + hour angle formula.
 
-## Phase 3: User Story 1 - Basic Time Display (Priority: P1) 🎯 MVP
+- [ ] T074 [SYNC] Add `calculateSunriseAtZenithUTC(lat as Lang.Float, lon as Lang.Float, n as Lang.Float, zenithDegrees as Lang.Float) as Lang.Number?` static method to `src/services/SunCalculator.mc` — mirrors `calculateSunsetAtZenithUTC` but subtracts the hour angle from solar noon instead of adding it. Replace the duplicate sunrise logic in `AstronomicalService._calculateSunriseUTC()` with a call to this method at `zenithDegrees = GEOMETRIC_ZENITH + 0.8333`.
 
-**Goal**: Display current time prominently with automatic real-time updates
+- [ ] T075 [SYNC] Refactor `src/services/AstronomicalService._calculateSunriseUTC()` to call `SunCalculator.calculateSunriseAtZenithUTC(lat, lon, n, SunCalculator.GEOMETRIC_ZENITH + 0.8333)` instead of containing a copy of the NOAA algorithm. Remove the ~55-line duplicated block. Update the existing `SunCalculator.calculateSunsetUTC()` call-site to use `SunCalculator.calculateSunsetAtZenithUTC(lat, lon, n, SunCalculator.GEOMETRIC_ZENITH + 0.8333)` for consistency.
 
-**Independent Test**: Can be fully tested by opening the app and verifying the current time is displayed accurately and updates correctly
-
-### Implementation for User Story 1
-
-- [x] T018 [P] [US1] Create ClockComponent for current time display in src/ui/components/ClockComponent.mc
-- [x] T019 [US1] Create TimeDisplayView for main time interface in src/ui/TimeDisplayView.mc
-- [x] T020 [US1] Implement real-time update mechanism in TimeService
-- [x] T021 [US1] Add time display formatting and localization support
-- [x] T022 [US1] Integrate ClockComponent with main application interface
-- [x] T023 [US1] Add automatic time update scheduling (1-second intervals)
-- [x] T024 [P] [US1] Create time display layout in resources/layouts/time_display_layout.xml
-- [x] T025 [P] [US1] Add time-related strings in resources/strings/time_strings.xml
-- [x] T026 [P] [US1] Add clock icons in resources/images/time/clock_icons/
-
-**Checkpoint**: At this point, User Story 1 should be fully functional - app displays current time with real-time updates
+**Checkpoint**: `SunCalculator.mc` exposes parameterized zenith methods; `AstronomicalService` uses them with no duplicate math. Standard sunrise/sunset values are unchanged.
 
 ---
 
-## Phase 4: User Story 2 - Astronomical Time Calculations (Priority: P2)
+## Phase 10: US3 Enhancement — Degree-Based Tzais (KosherJava `getTzaisGeonim*`)
 
-**Goal**: Calculate and display accurate sunrise and sunset times based on user's location
+**Purpose**: Implement degree-based nightfall calculation matching KosherJava's `getTzaisGeonim8Point5Degrees()` and `getTzaisGeonim7Point083Degrees()`. Users can choose between fixed-minute and solar-angle–based end-of-Shabbat times.
 
-**Independent Test**: Can be tested by verifying displayed sunrise/sunset times match astronomical calculations for the user's current location and date
+**KosherJava equivalents**:
+- `ZmanimCalendar.getTzais()` → fixed 42 min (our existing default)
+- `ComplexZmanimCalendar.getTzaisGeonim8Point5Degrees()` → zenith 98.5°
+- `ComplexZmanimCalendar.getTzaisGeonim7Point083Degrees()` → zenith 97.083°
+- `ComplexZmanimCalendar.getTzais72()` → fixed 72 min (Rabbeinu Tam, our `use_rabbenu_tam`)
 
-### Implementation for User Story 2
+- [ ] T076 [SYNC] [US3] Add `tzais_method` setting to `src/models/TimeConfiguration.mc` with accepted values `"fixed_minutes"` (default), `"degrees_8_5"` (KosherJava `getTzaisGeonim8Point5Degrees`), `"degrees_7_083"` (KosherJava `getTzaisGeonim7Point083Degrees`). Add `getTzaisMethod() as Lang.String` and `setTzaisMethod(method as Lang.String) as Lang.Boolean` typed accessors. Migrate the existing `use_rabbenu_tam` flag: when true, default `tzais_method` to `"fixed_minutes"` with `shabbat_end_offset = 72`.
 
-- [x] T027 [P] [US2] Create AstronomicalData model in src/models/AstronomicalData.mc
-- [x] T028 [US2] Create AstronomicalService for sunrise/sunset calculations in src/services/AstronomicalService.mc
-- [x] T029 [P] [US2] Create SunPosition calculation algorithms in src/lib/calculations/SunPosition.mc
-- [x] T030 [P] [US2] Create DateMath utilities for date/time operations in src/lib/calculations/DateMath.mc
-- [x] T031 [P] [US2] Create SunTimesComponent for sunrise/sunset display in src/ui/components/SunTimesComponent.mc
-- [x] T032 [US2] Integrate location services with astronomical calculations
-- [x] T033 [US2] Add calculation caching for daily astronomical data in src/cache/CalculationCache.mc
-- [x] T034 [US2] Implement error handling for calculation failures and extreme latitudes
-- [x] T035 [US2] Add sunrise/sunset display to main time interface
-- [x] T036 [P] [US2] Add sun-related icons in resources/images/time/sun_icons/
-- [x] T037 [P] [US2] Add astronomical time strings in resources/strings/time_strings.xml
+- [ ] T077 [SYNC] [US3] Add `calculateTzaisLocalSeconds(lat as Lang.Float, lon as Lang.Float, n as Lang.Float, utcOffsetSecs as Lang.Number, method as Lang.String, fixedOffsetMinutes as Lang.Number) as Lang.Number` static utility to `src/services/SunCalculator.mc`. Logic: if method is `"degrees_8_5"` call `calculateSunsetAtZenithUTC(lat, lon, n, 98.5)` + utcOffset; if `"degrees_7_083"` use zenith 97.083°; else use `sunsetLocalSecs + fixedOffsetMinutes * 60`. Returns local seconds from midnight, or -1 on failure/polar.
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - current time and astronomical times displayed
+- [ ] T078 [SYNC] [US3] Update `src/services/ShabbatTimeService.getShabbatTimes()` to invoke `SunCalculator.calculateTzaisLocalSeconds()` with the method from `TimeConfiguration.getTzaisMethod()` when building `ShabbatTimes`. Pass the tzais result into a new `ShabbatTimes.configureDegreeBasedTzais(sunsetLocalSecs, tzaisLocalSecs, candleOffsetMinutes, dayId)` path so the display model is decoupled from the calculation method.
 
----
+- [ ] T079 [SYNC] [US3] Add `configureDegreeBasedTzais(sunsetLocalSecs as Lang.Number, tzaisLocalSecs as Lang.Number, candleOffsetMinutes as Lang.Number, dayId as Lang.Number) as Void` to `src/models/ShabbatTimes.mc`. Sets `_shabbatEndLocalSeconds` directly from the pre-computed `tzaisLocalSecs` rather than deriving it from `endOffsetMinutes`. Keep `configureFromSunset()` for the fixed-minutes path.
 
-## Phase 5: User Story 3 - Shabbat Time Calculations (Priority: P3)
+- [ ] T080 [SYNC] [US3] Update `src/services/ShabbatWindowService._calculateForDay()` to derive the nightfall boundary using `SunCalculator.calculateTzaisLocalSeconds()` (same method as `ShabbatTimeService`) instead of the hardcoded `config.getShabbatEndOffset() * 60` arithmetic. Ensures battery conservation mode activates/deactivates at the same nightfall time as displayed on screen.
 
-**Goal**: Calculate and display candle lighting and end of Shabbat times according to halacha (Jewish law)
+- [ ] T081 [P] [ASYNC] [US3] Add string resources to `resources/strings/shabbat_strings.xml` for tzais method display names: `TzaisFixed` ("Fixed min"), `TzaisGeonim8_5` ("Geonim 8.5°"), `TzaisGeonim7_083` ("Geonim 7°"), `TzaisMethodLabel` ("Shabbat end:"). These appear in `TimeSettingsView`.
 
-**Independent Test**: Can be tested by verifying candle lighting time (18-20 minutes before sunset) and end of Shabbat time (25-42 minutes after sunset) are calculated and displayed correctly
+- [ ] T082 [SYNC] [US3] Update `src/ui/TimeSettingsView.mc` to add a tzais method selection item that cycles through `"fixed_minutes"` → `"degrees_8_5"` → `"degrees_7_083"` (replacing the existing `use_rabbenu_tam` toggle). Display the current method name using the new `Rez.Strings.TzaisGeonim*` resources. Load and save via `TimeConfiguration.getTzaisMethod()` / `setTzaisMethod()`.
 
-### Implementation for User Story 3
-
-- [x] T038 [P] [US3] Create ShabbatTimes model in src/models/ShabbatTimes.mc
-- [x] T039 [US3] Create ShabbatTimeService for Shabbat-specific calculations in src/services/ShabbatTimeService.mc
-- [x] T040 [P] [US3] Create ShabbatTimesComponent for candle lighting and end times display in src/ui/components/ShabbatTimesComponent.mc
-- [x] T041 [US3] Implement configurable time offsets for candle lighting (default 18 minutes before sunset)
-- [x] T042 [US3] Implement configurable time offsets for end of Shabbat (default 25-42 minutes after sunset)
-- [x] T043 [US3] Add Shabbat time calculations based on sunset times
-- [x] T044 [US3] Create time configuration interface in TimeSettingsView
-- [x] T045 [US3] Integrate Shabbat times with main time display interface
-- [x] T046 [US3] Add validation for Shabbat time accuracy and edge cases
-- [x] T047 [P] [US3] Create time settings layout in resources/layouts/time_settings_layout.xml
-- [x] T048 [P] [US3] Add Shabbat-related strings in resources/strings/shabbat_strings.xml
-- [x] T049 [P] [US3] Add Shabbat icons (candles, etc.) in resources/images/time/shabbat_icons/
-
-**Checkpoint**: All user stories should now be independently functional - complete time display with current, astronomical, and Shabbat times
+**Checkpoint**: Selecting "Geonim 8.5°" in settings causes `ShabbatTimeService` to return a sunset-angle–based end-of-Shabbat time; `ShabbatWindowService` uses the same boundary. Fixed-minutes path (including Rabbeinu Tam 72 min) remains unchanged.
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 11: Validation — Cross-Reference Against KosherJava
 
-**Purpose**: Improvements that enhance reliability and user experience across all time functionality
+**Purpose**: Verify that the Monkey C implementation produces results within ±2 minutes of KosherJava reference outputs across diverse locations and seasons.
 
-- [x] T050 [P] Add comprehensive error handling for location service failures
-- [x] T051 [P] Implement battery-efficient GPS usage patterns
-- [x] T052 Performance optimization for time calculations and display updates
-- [x] T053 [P] Add timezone change detection and automatic recalculation
-- [x] T054 [P] Create fallback behavior for extreme latitudes and calculation edge cases
-- [x] T055 [P] Add accuracy validation tests comparing calculations to authoritative sources
-- [x] T056 Add user feedback for calculation accuracy and location status
-- [x] T057 [P] Create comprehensive time calculation documentation
-- [x] T058 [P] Add time calculation unit tests in tests/calculations/
+- [ ] T083 [P] [ASYNC] Create `specs/003-shabbat-time-display/validation/kosherjava-reference.md` containing KosherJava reference values for 5 test cases. Each entry includes: location name, lat/lon, date, expected sunrise (UTC), sunset (UTC), candle lighting (sunset − 18 min), tzais 8.5° from KosherJava `ComplexZmanimCalendar.getTzaisGeonim8Point5Degrees()`, tzais 42 min. Cover: Lakewood NJ, Jerusalem IL, London UK, Melbourne AU (southern hemisphere Dec solstice), Tromsø NO (polar warning expected).
+
+- [ ] T084 [SYNC] Add `// KosherJava reference:` inline comments to `src/services/SunCalculator.mc` near the `calculateSunsetAtZenithUTC` and `calculateSunriseAtZenithUTC` methods documenting expected UTC outputs for Lakewood NJ (40.096°N, 74.222°W) on 2026-04-22 and 2025-12-21 (winter solstice). Enables a developer to manually verify by running the simulator with a frozen clock and comparing to the Zmanim Calendar at https://kosherjava.com/zmanim-project/zmanim-calendar/.
+
+- [ ] T085 [P] [ASYNC] Update `specs/003-shabbat-time-display/quickstart.md` section "Running Tests" to add a subsection "Degree-Based Tzais Validation" explaining how to: (1) set the simulator to a specific GPS coordinate, (2) read the displayed end-of-Shabbat time in "Geonim 8.5°" mode, (3) compare against KosherJava `ComplexZmanimCalendar.getTzaisGeonim8Point5Degrees()` for the same location and date.
+
+**Checkpoint**: Developer can reproduce KosherJava reference values within ±2 minutes using the simulator with the instructions in quickstart.md.
 
 ---
 
-## Phase 7: User Story 4 - Shabbat Battery Conservation Mode (Priority: P2)
+## Phase 12: Polish & Documentation Update
 
-**Goal**: Reduce app-level activity during the Shabbat period to preserve battery life without activating system-level Do Not Disturb
+**Purpose**: Keep design docs in sync with the implemented changes.
 
-**Independent Test**: Can be tested by verifying that during the Shabbat period the screen refresh rate and GPS polling are reduced, system DND is not activated, and normal activity resumes automatically at Shabbat end
+- [ ] T086 [P] [ASYNC] Update `specs/003-shabbat-time-display/research.md` section "§4 End-of-Shabbat (Tzais) Calculation Method" to mark the degree-based option as **implemented** (not future) and add the zenith-to-average-minutes table for common latitudes (30°N, 40°N, 50°N) for 8.5° and 7.083° zeniths.
 
-### Implementation for User Story 4
+- [ ] T087 [P] [ASYNC] Update `specs/003-shabbat-time-display/data-model.md` `TimeConfiguration` entity table to add the `tzais_method` field (type String, values: `"fixed_minutes"` / `"degrees_8_5"` / `"degrees_7_083"`), and add a note that `use_rabbenu_tam` maps to `tzais_method = "fixed_minutes"` with `shabbatEndOffsetMinutes = 72`.
 
-- [x] T059 [US4] Add `setUpdateIntervalSeconds()` to LocationService for configurable GPS polling in src/services/LocationService.mc
-- [x] T060 [US4] Create BatteryConservationService for Shabbat activity reduction management in src/services/BatteryConservationService.mc
-- [x] T061 [US4] Integrate BatteryConservationService into MainView with adaptive timer restart in src/ui/MainView.mc
-- [x] T062 [US4] Implement minimal conservation display (static-like layout, no seconds, dim palette) in src/ui/MainView.mc
-- [x] T063 [P] [US4] Add battery conservation strings in resources/strings/shabbat_strings.xml
-
-**Checkpoint**: App reduces screen refresh by ≥80%, GPS polling ≤30 min, no system DND, auto-restores at Shabbat end
-
----
-
-## Phase 8: String Resource Extraction (Cross-Cutting)
-
-**Purpose**: Eliminate all hardcoded user-facing strings from source code; every display string must be loaded from a Garmin resource file via `WatchUi.loadResource(Rez.Strings.XXX)`
-
-**Scope of hardcoded strings found**:
-- `MainView.mc`: "ShabbatMode", "Shabbat", "Ends …", "until Shabbat", "No location set", "Welcome! Press SELECT to continue", "Initialization Error", "Please restart the app"
-- `TimeDisplayView.mc`: "Shabbat", "ShabbatMode", "Candles: ", "Havdalah: ", "No location — set manually in settings", "Polar: times unavailable", "Time Display Error"
-- `TimeSettingsView.mc`: "Settings Error", "Settings", "Candles: $1$ min", "Shabbat end: $1$ min", "Rabbenu Tam: $1$", "Time format: $1$h", "ON", "OFF", "SELECT: change  BACK: exit"
-- `ShabbatTimesComponent.mc`: "Candles: ", "Havdalah: "
-
-- [x] T064 [SYNC] Audit all source files for hardcoded user-facing strings and verify mapping to resource IDs; produce a comment block in each file listing the Rez.Strings.* IDs to use — affects `src/ui/MainView.mc`, `src/ui/TimeDisplayView.mc`, `src/ui/TimeSettingsView.mc`, `src/ui/components/ShabbatTimesComponent.mc`
-- [x] T065 [P] [ASYNC] Add missing string entries (`SettingsError`, `TimeDisplayError`, `SettingsHint`) to `resources/strings/strings.xml`
-- [x] T066 [P] [ASYNC] Add missing format string entries (`CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`) to `resources/strings/shabbat_strings.xml`
-- [x] T067 [SYNC] Refactor `src/ui/MainView.mc` to replace all hardcoded user-facing strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActive`, `ConservationEndsPrefix`, `ShabbatCountdown`, `LocationNeeded`, `FirstRunMessage`, `ShabbatModeTitle`, `InitializationError`, `RestartRequired`
-- [x] T068 [P] [SYNC] Refactor `src/ui/TimeDisplayView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `AppName`, `ShabbatActiveLabel`, `CandleLightingLabel`, `HavdalahLabel`, `LocationNeeded`, `PolarWarning`, `TimeDisplayError`
-- [x] T069 [P] [SYNC] Refactor `src/ui/TimeSettingsView.mc` to replace all hardcoded strings with `WatchUi.loadResource(Rez.Strings.*)` calls — uses `SettingsTitle`, `SettingsError`, `SettingsHint`, `CandlesSettingFormat`, `ShabbatEndSettingFormat`, `RabbenuTamSettingFormat`, `TimeFormatSettingFormat`, `On`, `Off`
-- [x] T070 [P] [ASYNC] Refactor `src/ui/components/ShabbatTimesComponent.mc` to replace `"Candles: "` and `"Havdalah: "` with `WatchUi.loadResource(Rez.Strings.CandleLightingLabel)` and `WatchUi.loadResource(Rez.Strings.HavdalahLabel)` plus a colon separator
-
-**Checkpoint**: No user-facing string literals remain in any `.mc` source file; all display text is driven by `resources/strings/*.xml`
+- [ ] T088 [P] [ASYNC] Update `specs/003-shabbat-time-display/research.md` KosherJava Cross-Reference Table (§9) to add rows for the new methods: `ComplexZmanimCalendar.getTzaisGeonim8Point5Degrees()` → `SunCalculator.calculateTzaisLocalSeconds(..., "degrees_8_5", ...)`, and `ComplexZmanimCalendar.getTzaisGeonim7Point083Degrees()` → same with `"degrees_7_083"`.
 
 ---
 
@@ -190,95 +119,139 @@
 
 ### Phase Dependencies
 
-- **CRITICAL PREREQUISITE**: Base application framework must be fully completed first
-- **Setup (Phase 1)**: No dependencies after base app - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Phase 6)**: Depends on all desired user stories being complete
-- **String Resource Extraction (Phase 8)**: Depends on all implementation phases — T065/T066 (add missing resources) must complete before T067–T070 (refactor code)
+- **Phase 9 (T071–T075)**: No dependencies. MUST complete before Phases 10–12.
+  - T071 (extract helper) → T073, T074 depend on the new structure
+  - T072 (constants) can run in parallel with T071
+  - T073 and T074 depend on T071 (shared helper)
+  - T075 depends on T074 (sunrise method)
+- **Phase 10 (T076–T082)**:
+  - Depends on Phase 9 complete (T073 + T074 + T075 must be done)
+  - T076 (config) must complete before T077, T078, T082
+  - T077 (calculate utility) must complete before T078, T080
+  - T078 (service update) depends on T076 + T077 + T079
+  - T079 (model update) can run in parallel with T077
+  - T080 depends on T077
+  - T081 (strings) and T082 (UI) are independent within Phase 10; T082 depends on T076 + T081
+- **Phase 11 (T083–T085)**: Can start after Phase 10 complete; T083 and T085 are fully [ASYNC] and can run in parallel
+- **Phase 12 (T086–T088)**: Fully independent [ASYNC]; can run in parallel with Phase 11
 
-### User Story Dependencies
+### User Story Mapping
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - Independent but provides data for US3
-- **User Story 3 (P3)**: Depends on US2 sunset calculations but can be tested independently with mock data
-
-### Within Each User Story
-
-- Models before services that use them
-- Calculation utilities before services that call them
-- Services before UI components that display their data
-- Core functionality before integration with main interface
-- Story complete before moving to next priority
-
-### Parallel Opportunities
-
-- All Setup tasks marked [P] can run in parallel
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, US1 and US2 can start in parallel
-- Resources (layouts, strings, icons) can be developed in parallel within each story
-- Calculation utilities and validators can be developed in parallel
-- Different user stories can be worked on in parallel by different team members
+- **US2 (Astronomical Calculations)**: T071–T075 — generalise SunCalculator
+- **US3 (Shabbat Times)**: T076–T082 — degree-based tzais; T083–T088 — validation and docs
 
 ---
 
-## Parallel Example: User Story 2
+## Parallel Execution Examples
 
-```bash
-# Launch calculation components and resources for User Story 2 together:
-Task: "Create SunPosition calculation algorithms in src/lib/calculations/SunPosition.mc"
-Task: "Create DateMath utilities for date/time operations in src/lib/calculations/DateMath.mc"
-Task: "Create SunTimesComponent for sunrise/sunset display in src/ui/components/SunTimesComponent.mc"
-Task: "Add sun-related icons in resources/images/time/sun_icons/"
-Task: "Add astronomical time strings in resources/strings/time_strings.xml"
+### Phase 9 — Parallel start
+
+```
+T072 (constants) ← can start immediately
+T071 (helper extract) ← start immediately
+  → T073 (sunset zenith method) ← after T071
+  → T074 (sunrise zenith method) ← after T071
+    → T075 (refactor AstronomicalService) ← after T074
+```
+
+### Phase 10 — Parallel opportunities
+
+```
+T076 (config)     ← after Phase 9
+T079 (model)      ← parallel with T076
+T081 (strings)    ← parallel with T076
+  → T077 (utility) ← after T076
+    → T078 (service) ← after T076 + T077 + T079
+    → T080 (window service) ← after T077
+  → T082 (UI) ← after T076 + T081
+```
+
+### Phase 11+12 — Fully parallel after Phase 10
+
+```
+T083 [ASYNC]  T084 [SYNC]  T085 [ASYNC]
+T086 [ASYNC]  T087 [ASYNC]  T088 [ASYNC]
+(all can run concurrently)
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### Core First (Phases 9 → 10 → 11)
 
-1. Complete Phase 1: Setup (after base app completion)
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently - app displays current time with real-time updates
-5. Deploy/demo if ready
+1. Complete Phase 9 refactoring → SunCalculator generalised
+2. Implement Phase 10 tzais method selection → new KosherJava zmanim live
+3. **STOP and VALIDATE**: Use simulator with Lakewood NJ location and compare against KosherJava Zmanim Calendar
+4. Complete Phase 11 validation docs
+5. Complete Phase 12 documentation updates
 
-### Incremental Delivery
+### MVP Scope for KosherJava Port
 
-1. Complete Setup + Foundational → Time services ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
-5. Each story adds value without breaking previous stories
-
-### Parallel Team Strategy
-
-With multiple developers (after base app completion):
-
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
-   - Developer A: User Story 1 (Basic Time Display)
-   - Developer B: User Story 2 (Astronomical Time Calculations)
-   - Developer C: User Story 3 (Shabbat Time Calculations) - starts after US2 provides sunset calculations
-3. Stories complete and integrate independently
+Minimum viable: **T071 → T073 → T074 → T075** (Phase 9) + **T076 → T077 → T078 → T079 → T080** (core Phase 10) — provides degree-based tzais without UI selector.  
+Full completion: add T081, T082 (UI selector) and all validation/docs tasks.
 
 ---
 
 ## Notes
 
-- [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- **CRITICAL**: This feature cannot begin until base application framework is complete
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Focus on accuracy requirements: ±2 minutes for astronomical calculations
-- Ensure performance requirements: <500ms calculations, <1s display updates
-- Handle edge cases: extreme latitudes, location unavailable, timezone changes
-- Maintain battery efficiency in GPS usage and real-time updates
-- **String resources**: All user-facing display text MUST be loaded via `WatchUi.loadResource(Rez.Strings.XXX)` — never hardcode labels, status messages, or error strings in `.mc` source files
-- **Resource file ownership**: `strings.xml` = general app strings; `shabbat_strings.xml` = Shabbat-domain and settings strings; `time_strings.xml` = time-display labels and status messages
+- [P] tasks = different files, no dependencies — can run in parallel
+- [SYNC] = requires human review (algorithm logic, architectural changes, halachic correctness)
+- [ASYNC] = well-defined, mechanical tasks safe for agent delegation (strings, docs, reference data)
+- **KosherJava reference**: https://kosherjava.com/zmanim-project/ — use the online Zmanim Calendar to generate reference values for any location/date
+- **Accuracy target**: ±2 minutes vs KosherJava `NOAACalculator` output (SC-002)
+- **No code duplication**: `AstronomicalService` sunrise should delegate to `SunCalculator`, not copy its logic
+- **Tzais consistency**: `ShabbatWindowService` (battery conservation boundary) MUST use the same tzais computation as `ShabbatTimeService` (display) — never diverge
+- **String resources**: All new display labels must come from `resources/strings/shabbat_strings.xml`, never hardcoded
+
+---
+
+## TDD Validation Phase (Mandatory Hook: adlc.tdd.tasks)
+
+**Language**: Monkey C (Connect IQ SDK 4.0+)  
+**Framework**: Connect IQ Simulator + manual assertions (no automated test runner available in CIQ)  
+**Test execution**: `connectiq` simulator with frozen clock + known GPS coordinates  
+**Approach**: Increment-based (one assertion per new method) + regression (existing behaviour unchanged)
+
+### Degenerate Cases
+
+- [ ] TDD-001 [SYNC] Verify `SunCalculator.calculateSunsetAtZenithUTC(69.65, 18.96, n, 90.8333)` returns `null` for Tromsø, Norway (69.65°N) on 2025-06-21 (midnight sun) — polar region must not produce a sunset time. Replaces the old `calculateSunsetUTC` polar check.
+
+- [ ] TDD-002 [SYNC] Verify `SunCalculator.calculateSunriseAtZenithUTC(69.65, 18.96, n, 90.8333)` returns `null` for Tromsø on 2025-12-21 (polar night) — no sunrise during Arctic winter.
+
+- [ ] TDD-003 [SYNC] Verify `SunCalculator.calculateTzaisLocalSeconds(69.65, 18.96, n, utcOffset, "degrees_8_5", 42)` returns `-1` (unavailable) when the degree-based calculation returns null for a polar location — graceful degradation, no crash.
+
+### Happy Path — Standard Sunset Regression
+
+- [ ] TDD-004 [SYNC] Verify `SunCalculator.calculateSunsetAtZenithUTC(40.096, -74.222, n, 90.8333)` for Lakewood NJ on 2026-04-22 produces a UTC result within ±60 seconds of the value previously returned by `SunCalculator.calculateSunsetUTC(40.096, -74.222, n)` — confirms the refactoring in T073 is a pure regression with no behaviour change.
+
+- [ ] TDD-005 [SYNC] Verify `SunCalculator.calculateSunriseAtZenithUTC(40.096, -74.222, n, 90.8333)` for Lakewood NJ on 2026-04-22 produces a UTC result within ±60 seconds of the sunrise previously calculated in `AstronomicalService._calculateSunriseUTC()` — confirms T074/T075 refactor is safe.
+
+### Happy Path — Degree-Based Tzais (KosherJava Equivalents)
+
+- [ ] TDD-006 [SYNC] [US3] Verify `SunCalculator.calculateSunsetAtZenithUTC(40.096, -74.222, n, 98.5)` for Lakewood NJ on 2026-04-22 produces a UTC time approximately 40–44 minutes after standard sunset (zenith 90.8333°) — matches expected output of KosherJava `ComplexZmanimCalendar.getTzaisGeonim8Point5Degrees()` within ±2 minutes. Reference: check https://kosherjava.com/zmanim-project/zmanim-calendar/ for the same date and location.
+
+- [ ] TDD-007 [SYNC] [US3] Verify `SunCalculator.calculateSunsetAtZenithUTC(31.78, 35.22, n, 98.5)` for Jerusalem on 2026-04-22 produces a UTC time approximately 35–38 minutes after standard sunset — KosherJava `getTzaisGeonim8Point5Degrees()` for Jerusalem. Validates that the zenith calculation is location-dependent (differs from New York result).
+
+- [ ] TDD-008 [SYNC] [US3] Verify `SunCalculator.calculateSunsetAtZenithUTC(51.51, -0.12, n, 97.083)` for London on 2026-04-22 produces a UTC time approximately 27–31 minutes after standard sunset — matches KosherJava `getTzaisGeonim7Point083Degrees()` within ±2 minutes.
+
+### Edge Cases
+
+- [ ] TDD-009 [P] [SYNC] [US3] Verify that when `TimeConfiguration.getTzaisMethod()` returns `"degrees_8_5"`, `ShabbatTimeService.getShabbatTimes()` returns a `ShabbatTimes` object whose `getShabbatEndLocalSeconds()` matches the result of `SunCalculator.calculateTzaisLocalSeconds(..., "degrees_8_5", ...)` — i.e., the service correctly delegates to the degree-based path.
+
+- [ ] TDD-010 [P] [SYNC] [US3] Verify that `ShabbatWindowService.isShabbat()` boundary on Saturday night matches `ShabbatTimeService.getShabbatTimes().getShabbatEndLocalSeconds()` — both must use the same tzais computation so conservation mode ends exactly when the display shows Shabbat has ended. Test by overriding simulator clock to 1 second before and 1 second after the computed tzais time.
+
+### TDD Test Summary
+
+| Test | Method | Location | Date | Expected |
+|------|--------|----------|------|---------|
+| TDD-001 | Sunset polar | Tromsø 69.65°N | Jun 21 | `null` |
+| TDD-002 | Sunrise polar | Tromsø 69.65°N | Dec 21 | `null` |
+| TDD-003 | Tzais polar | Tromsø 69.65°N | Jun 21 | `-1` |
+| TDD-004 | Sunset regression | Lakewood NJ | Apr 22 | ±0 sec vs old method |
+| TDD-005 | Sunrise regression | Lakewood NJ | Apr 22 | ±0 sec vs old method |
+| TDD-006 | Tzais 8.5° | Lakewood NJ | Apr 22 | ~40–44 min after sunset |
+| TDD-007 | Tzais 8.5° | Jerusalem IL | Apr 22 | ~35–38 min after sunset |
+| TDD-008 | Tzais 7.083° | London UK | Apr 22 | ~27–31 min after sunset |
+| TDD-009 | Service delegation | Any | Any | Method used matches config |
+| TDD-010 | Window/display sync | Any | Saturday | Boundary identical |
