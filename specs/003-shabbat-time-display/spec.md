@@ -66,7 +66,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 
 1. **Given** Shabbat has begun (after candle lighting time on Friday), **When** the app is running, **Then** it enters a low-activity mode — reducing screen update frequency, GPS polling, and background work — without activating the device's system-level Do Not Disturb feature
 2. **Given** the app is in Shabbat battery conservation mode, **When** Shabbat ends (after end-of-Shabbat time on Saturday night), **Then** the app automatically returns to normal activity levels
-3. **Given** the app is in Shabbat battery conservation mode, **When** I view the screen, **Then** the display shows a minimal, static-like layout (similar in spirit to a Do Not Disturb screen) that refreshes infrequently to minimize power draw, with the label reading "Shabbat"
+3. **Given** the app is in Shabbat battery conservation mode, **When** I view the screen, **Then** the display shows a minimal, static-like layout (similar in spirit to a Do Not Disturb screen) that refreshes infrequently to minimize power draw, with the label reading "Shabbat", and the time displayed as HH:MM without seconds
 
 ---
 
@@ -93,7 +93,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **FR-009**: System MUST enter a battery conservation mode during the Shabbat period (from candle lighting time Friday through end-of-Shabbat Saturday night) that reduces screen refresh rate, GPS polling frequency, and background calculations
 - **FR-010**: System MUST NOT activate the device's system-level Do Not Disturb mode; battery conservation is achieved purely through internal app-level activity reduction
 - **FR-011**: System MUST automatically exit battery conservation mode when the Shabbat period ends and return to normal operational activity levels
-- **FR-012**: System MUST display a simplified, low-refresh-rate layout during battery conservation mode, visually inspired by a minimal Do Not Disturb style screen
+- **FR-012**: System MUST display a simplified, low-refresh-rate layout during battery conservation mode, visually inspired by a minimal Do Not Disturb style screen; the time display MUST show HH:MM format only — seconds MUST NOT be displayed during any Shabbat display mode, preventing unnecessary 1-second redraw cycles
 - **FR-013**: System MUST display "Shabbat" as the mode label at all times (both during normal operation and battery conservation mode)
 - **FR-014**: System MUST support degree-based end-of-Shabbat calculation (solar zenith angle method) as a user-selectable alternative to fixed-minute offsets; supported options MUST include Tzais Geonim 8.5° (zenith 98.5°) and Tzais Geonim 7.083° (zenith 97.083°), matching the KosherJava `getTzaisGeonim8Point5Degrees()` and `getTzaisGeonim7Point083Degrees()` reference implementations
 
@@ -109,7 +109,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 
 ### Measurable Outcomes
 
-- **SC-001**: Time displays update within 1 second of actual time changes
+- **SC-001**: Time displays update within 1 second of actual time changes during normal (non-Shabbat) operation; during Shabbat the display intentionally updates every 30 seconds (HH:MM format, no seconds shown) to conserve battery
 - **SC-002**: Astronomical calculations are accurate to within ±2 minutes of authoritative sources
 - **SC-003**: App continues to function with cached location data when GPS is unavailable for up to 24 hours
 - **SC-004**: All time calculations complete within 500ms of location acquisition

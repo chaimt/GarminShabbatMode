@@ -186,10 +186,10 @@ class MainView extends WatchUi.View {
 
         if (_timeComponent != null) {
             var clockTime = System.getClockTime();
-            var timeString = Lang.format("$1$:$2$:$3$", [
+            // No seconds during Shabbat — consistent with conservation display (FR-012)
+            var timeString = Lang.format("$1$:$2$", [
                 clockTime.hour.format("%02d"),
-                clockTime.min.format("%02d"),
-                clockTime.sec.format("%02d")
+                clockTime.min.format("%02d")
             ]);
             _timeComponent.setText(timeString);
             _timeComponent.setTextColor(Graphics.COLOR_WHITE);

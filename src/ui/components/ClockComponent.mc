@@ -3,7 +3,8 @@ using Toybox.Lang;
 using Toybox.System;
 
 // Displays the current local time as "HH:MM:SS" (or "HH:MM" when compact).
-// Refreshed every second by the parent view's timer.
+// During Shabbat, seconds are always suppressed: setShabbatMode(true) must be
+// called by any parent view that knows Shabbat is active (T092 / FR-012).
 class ClockComponent extends BaseComponent {
 
     private var _showSeconds as Lang.Boolean;
@@ -14,6 +15,13 @@ class ClockComponent extends BaseComponent {
         _showSeconds = true;
         _font = Graphics.FONT_LARGE;
         setTextColor(Graphics.COLOR_WHITE);
+    }
+
+    // Convenience wrapper: suppress seconds and dim colour during Shabbat.
+    // Call with isShabbat=true when BatteryConservationService.isActive() is true.
+    function setShabbatMode(isShabbat as Lang.Boolean) as Void {
+        _showSeconds = !isShabbat;
+        setTextColor(isShabbat ? Graphics.COLOR_LT_GRAY : Graphics.COLOR_WHITE);
     }
 
     function setShowSeconds(show as Lang.Boolean) as Void {

@@ -1,11 +1,11 @@
-# Tasks: Shabbat Time Display — KosherJava Algorithm Port
+# Tasks: Shabbat Time Display — KosherJava Algorithm Port + Seconds Suppression
 
 **Input**: Design documents from `/specs/003-shabbat-time-display/`  
 **Algorithm Reference**: https://kosherjava.com/zmanim-project/  
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md (KosherJava mapping), context.md
 
-**Dependencies**: Base application framework complete. Phases 1–8 (T001–T070) complete.  
-**This tasks.md**: Covers the KosherJava port enhancement — generalizing the solar calculator and adding degree-based zmanim.
+**Dependencies**: Base application framework complete. Phases 1–8 (T001–T070) complete. Phases 9–12 (T071–T088) complete.  
+**This tasks.md**: KosherJava port + seconds suppression during Shabbat (battery conservation, US4 / FR-012).
 
 **Tests**: Manual validation against KosherJava reference outputs (see T083, T084).
 
@@ -255,3 +255,55 @@ Full completion: add T081, T082 (UI selector) and all validation/docs tasks.
 | TDD-008 | Tzais 7.083° | London UK | Apr 22 | ~27–31 min after sunset |
 | TDD-009 | Service delegation | Any | Any | Method used matches config |
 | TDD-010 | Window/display sync | Any | Saturday | Boundary identical |
+
+---
+
+## Phase 13: US4 — Suppress Seconds During Shabbat (Battery Conservation)
+
+**User Story**: US4 — Shabbat Battery Conservation Mode (Priority: P2)  
+**Goal**: Seconds must never appear on any display surface during Shabbat — displaying seconds forces a 1-second redraw cycle that drains battery and has no utility when the device refreshes at most once per 30 seconds.
+
+**Constitutional alignment**: Principle I (Shabbat Compliance First) — reduce electronic activity; Principle III (Minimal Sensor Footprint) — fewer redraws; FR-012 (simplified layout); SC-005 (≥80% refresh reduction).
+
+**Root cause analysis**:
+- `TimeDisplayView._drawAllRows()` line 144: always calls `TimeFormatter.currentTimeHHMMSS()` regardless of Shabbat state — **real bug**
+- `TimeDisplayView.onShow()`: always starts a 1-second timer even during Shabbat — **battery waste**
+- `MainView.updateShabbatDisplay()`: dead-code fallback path still formats `"$1$:$2$:$3$"` — **inconsistency**
+- `MainView.updateConservationDisplay()`: already correct (uses `"$1$:$2$"` at 30s refresh) ✅
+
+**Independent Test**: Open `TimeDisplayView` on a Saturday during Shabbat hours; verify the time displays as `HH:MM` with no seconds digit, and that simulator logs show the view ticking at 30-second intervals instead of 1-second.
+
+- [x] T089 [SYNC] [US4] Fix `TimeDisplayView._drawAllRows()` in `src/ui/TimeDisplayView.mc` — change line 144 from `TimeFormatter.currentTimeHHMMSS()` to `isShabbat ? TimeFormatter.currentTimeHHMM() : TimeFormatter.currentTimeHHMMSS()` so the Row 1 time never shows seconds during Shabbat
+
+- [x] T090 [SYNC] [US4] Add Shabbat-aware timer interval to `src/ui/TimeDisplayView.mc` — create a `BatteryConservationService` instance inside `TimeDisplayView`; in `onShow()`, read `getRefreshIntervalMs()` and start the timer at 1000ms normally or 30000ms during Shabbat; restart the timer with the correct interval in `onTick()` when the conservation state changes (mirrors the existing pattern in `MainView.onTimerTick()`)
+
+- [x] T091 [ASYNC] [US4] Fix dead-code seconds in `MainView.updateShabbatDisplay()` in `src/ui/MainView.mc` — change the time format string from `"$1$:$2$:$3$"` (three fields) to `"$1$:$2$"` (two fields), removing the `clockTime.sec.format("%02d")` argument, for constitutional consistency
+
+- [x] T092 [P] [ASYNC] Update `src/ui/components/ClockComponent.mc` — add a call to `setShowSeconds(false)` in the Shabbat display path; verify that `getTimeString()` returns `HH:MM` format when Shabbat is active (the `setShowSeconds()` method already exists; it just needs to be called from the Shabbat-aware context)
+
+- [x] T093 [P] [ASYNC] Update `specs/003-shabbat-time-display/spec.md` FR-012 and US4 acceptance scenario 3 to explicitly state: "the display MUST NOT show seconds during Shabbat mode; the time format is HH:MM throughout the entire Shabbat period"; also add a note to SC-001 ("Time displays update within 1 second") clarifying this criterion applies outside Shabbat only — during Shabbat the update frequency is intentionally reduced
+
+---
+
+## Phase 13 — Dependencies & Execution Order
+
+- **T089** (TimeDisplayView display fix) — no dependencies, start immediately
+- **T090** (TimeDisplayView timer fix) — no dependencies, can run in parallel with T089 (same file — run sequentially)
+- **T091** (MainView dead-code fix) — no dependencies, runs in parallel with T089/T090 (different file)
+- **T092** (ClockComponent) — no dependencies, parallel (different file)
+- **T093** (spec update) — no dependencies, parallel (different file)
+
+**Recommended sequence**:
+```
+T089 → T090 (same file, sequential)
+T091 [P]    (MainView.mc, parallel)
+T092 [P]    (ClockComponent.mc, parallel)
+T093 [P]    (spec.md, parallel)
+```
+
+**Validation** (after T089 + T090 complete):
+1. Set simulator clock to Saturday 19:30, GPS to Lakewood NJ
+2. Open `TimeDisplayView`
+3. Verify Row 1 shows `19:30` (no `:SS`)
+4. Check simulator logs: timer firing at 30s intervals, not 1s
+5. Wait for Shabbat to end (simulate Saturday 20:15); verify seconds reappear and timer returns to 1s

@@ -14,6 +14,7 @@ class TimeDisplayView extends WatchUi.View {
     private var _shabbatService as ShabbatWindowService?;
     private var _astronomicalService as AstronomicalService?;
     private var _timezoneService as TimezoneService?;
+    private var _conservationService as BatteryConservationService?;
     private var _logger as Logger?;
     private var _updateTimer as Timer.Timer?;
     private var _initialized as Lang.Boolean;
@@ -37,6 +38,9 @@ class TimeDisplayView extends WatchUi.View {
             _shabbatService = new ShabbatWindowService();
             _astronomicalService = new AstronomicalService();
             _timezoneService = new TimezoneService();
+            // Conservation service: drives timer interval + seconds suppression (T090)
+            _conservationService = new BatteryConservationService(_shabbatService, null);
+            _conservationService.syncState();
             _initialized = true;
             if (_logger != null) {
                 _logger.info("TimeDisplayView initialized");
@@ -47,12 +51,17 @@ class TimeDisplayView extends WatchUi.View {
         }
     }
 
-    // Start 1-second refresh timer when the view becomes active.
+    // Start refresh timer at the interval appropriate for the current conservation mode.
+    // During Shabbat: 30 000 ms (30 s) — matches BatteryConservationService (SC-005, T090).
+    // Outside Shabbat: 1 000 ms (1 s) — normal 1-second clock update.
     function onShow() as Void {
         if (_updateTimer == null) {
             _updateTimer = new Timer.Timer();
         }
-        _updateTimer.start(method(:onTick), 1000, true);
+        var intervalMs = (_conservationService != null)
+            ? _conservationService.getRefreshIntervalMs()
+            : 1000;
+        _updateTimer.start(method(:onTick), intervalMs, true);
         if (_astronomicalService != null) {
             _astronomicalService.refresh();
         }
@@ -66,12 +75,25 @@ class TimeDisplayView extends WatchUi.View {
     }
 
     function onTick() as Void {
+        // Detect Shabbat transitions and restart timer at the correct interval (T090).
+        if (_conservationService != null) {
+            var stateChanged = _conservationService.update();
+            if (stateChanged && _updateTimer != null) {
+                var newInterval = _conservationService.getRefreshIntervalMs();
+                _updateTimer.stop();
+                _updateTimer.start(method(:onTick), newInterval, true);
+                if (_logger != null) {
+                    _logger.info("TimeDisplayView timer restarted: " + newInterval + "ms");
+                }
+            }
+        }
+
         _tickCount++;
-        // Every 60 ticks (~1 minute): check for timezone change and refresh astro data.
+        // Every 60 ticks: check for timezone change and refresh astro data.
+        // During conservation mode ticks are 30 s apart, so 60 ticks ≈ 30 min.
         if (_tickCount >= 60) {
             _tickCount = 0;
             if (_timezoneService != null && _timezoneService.detectChange()) {
-                // Timezone changed — invalidate cached calculations.
                 if (_astronomicalService != null) {
                     _astronomicalService.refresh();
                 }
@@ -141,7 +163,11 @@ class TimeDisplayView extends WatchUi.View {
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ── Row 1: Current time ──────────────────────────────────────────────
-        var timeStr = TimeFormatter.currentTimeHHMMSS();
+        // Suppress seconds during Shabbat: displaying :SS forces 1-second redraws
+        // which drain battery; at 30 s refresh the seconds digit would be stale anyway.
+        var timeStr = isShabbat
+            ? TimeFormatter.currentTimeHHMM()
+            : TimeFormatter.currentTimeHHMMSS();
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, row1Y, Graphics.FONT_LARGE, timeStr,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
