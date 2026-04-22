@@ -161,4 +161,4 @@ resources/
 
 > No constitutional violations requiring justification were identified.
 
-All design decisions are within the constitutional bounds. The degree-based tzais calculation (KosherJava uses solar-angle-based nightfall) was evaluated but **not implemented** in the initial version — see `research.md` § "Tzais Calculation Method". Fixed-minute offsets are used instead, which is the standard approach for most Jewish communities and aligns with Principle V (Simplicity).
+All design decisions are within the constitutional bounds. The degree-based tzais calculation (KosherJava `getTzaisGeonim8Point5Degrees()` / `getTzaisGeonim7Point083Degrees()`) was deferred from the initial implementation but **is implemented** in Phase 10 (T076–T082) — see `research.md` § "Tzais Calculation Method" and `tasks.md` Phase 10. Fixed-minute offsets (default 42 min, Rabbeinu Tam) remain the default; degree-based selection is an optional user preference accessible only outside Shabbat, preserving Principle IV (Zero Interaction During Shabbat) and Principle V (Simplicity).

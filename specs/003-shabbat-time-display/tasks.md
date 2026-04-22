@@ -7,7 +7,7 @@
 **Dependencies**: Base application framework complete. Phases 1–8 (T001–T070) complete.  
 **This tasks.md**: Covers the KosherJava port enhancement — generalizing the solar calculator and adding degree-based zmanim.
 
-**Tests**: Manual validation against KosherJava reference outputs (see T013, T014).
+**Tests**: Manual validation against KosherJava reference outputs (see T083, T084).
 
 **Organization**: Tasks are grouped by purpose. Foundational refactoring must complete before degree-based zmanim work.
 

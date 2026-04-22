@@ -21,7 +21,7 @@ class ShabbatTimes {
         _shabbatEndLocalSeconds     = INVALID;
         _sunsetLocalSeconds         = INVALID;
         _candleOffset = 18;
-        _endOffset    = 25;
+        _endOffset    = 42;
         _dayId   = 0;
         _isValid = false;
     }

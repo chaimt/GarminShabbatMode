@@ -43,12 +43,14 @@ As a practicing Jewish user, I want to see the exact times for candle lighting a
 
 **Why this priority**: Core functionality for Shabbat observance - provides the specific religious times needed for proper Shabbat observance.
 
-**Independent Test**: Can be tested by verifying candle lighting time (typically 18-20 minutes before sunset) and end of Shabbat time (typically 25-42 minutes after sunset) are calculated and displayed correctly.
+**Independent Test**: Can be tested by verifying candle lighting time (18 minutes before sunset by default) and end of Shabbat time (42 minutes after sunset by default, Rabbeinu Tam) are calculated and displayed correctly.
 
 **Acceptance Scenarios**:
 
-1. **Given** sunset time is calculated, **When** I view the app on Friday, **Then** candle lighting time is displayed (typically 18-20 minutes before sunset)
-2. **Given** sunset time is calculated, **When** I view the app on Saturday evening, **Then** end of Shabbat time is displayed (typically 25-42 minutes after sunset depending on location customs)
+1. **Given** sunset time is calculated, **When** I view the app on Friday, **Then** candle lighting time is displayed (18 minutes before sunset by default)
+2. **Given** sunset time is calculated, **When** I view the app on Saturday evening, **Then** end of Shabbat time is displayed (default 42 minutes after sunset — Rabbeinu Tam; configurable by user preference)
+3. **Given** I select "Geonim 8.5°" as the end-of-Shabbat method in settings, **When** I view the app on Saturday evening, **Then** the displayed end-of-Shabbat time reflects the solar angle calculation (sun 8.5° below horizon) rather than a fixed offset, and matches KosherJava `getTzaisGeonim8Point5Degrees()` within ±2 minutes
+4. **Given** I select "Geonim 7°" as the end-of-Shabbat method in settings, **When** I view the app on Saturday evening, **Then** the displayed end-of-Shabbat time reflects the 7.083° solar angle calculation, matching KosherJava `getTzaisGeonim7Point083Degrees()` within ±2 minutes
 
 ---
 
@@ -84,7 +86,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **FR-002**: System MUST calculate sunrise time based on user's current location
 - **FR-003**: System MUST calculate sunset time based on user's current location  
 - **FR-004**: System MUST calculate candle lighting time (configurable minutes before sunset, default 18 minutes)
-- **FR-005**: System MUST calculate end of Shabbat time (configurable minutes after sunset, default 25-42 minutes)
+- **FR-005**: System MUST calculate end of Shabbat time (configurable offset after sunset, default 42 minutes — Rabbeinu Tam, the widely-used Ashkenazic standard)
 - **FR-006**: System MUST handle timezone changes and daylight saving time transitions
 - **FR-007**: System MUST provide fallback behavior when location services are unavailable
 - **FR-008**: System MUST update time displays automatically without user intervention
@@ -93,6 +95,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **FR-011**: System MUST automatically exit battery conservation mode when the Shabbat period ends and return to normal operational activity levels
 - **FR-012**: System MUST display a simplified, low-refresh-rate layout during battery conservation mode, visually inspired by a minimal Do Not Disturb style screen
 - **FR-013**: System MUST display "Shabbat" as the mode label at all times (both during normal operation and battery conservation mode)
+- **FR-014**: System MUST support degree-based end-of-Shabbat calculation (solar zenith angle method) as a user-selectable alternative to fixed-minute offsets; supported options MUST include Tzais Geonim 8.5° (zenith 98.5°) and Tzais Geonim 7.083° (zenith 97.083°), matching the KosherJava `getTzaisGeonim8Point5Degrees()` and `getTzaisGeonim7Point083Degrees()` reference implementations
 
 ### Key Entities *(include if feature involves data)*
 
@@ -100,7 +103,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - **Location**: User's geographic coordinates for calculations
 - **AstronomicalData**: Sunrise and sunset calculations
 - **ShabbatTimes**: Candle lighting and end of Shabbat calculations
-- **TimeConfiguration**: User preferences for time offsets and display formats
+- **TimeConfiguration**: User preferences for time offsets, tzais calculation method, and display formats
 
 ## Success Criteria *(mandatory)*
 
@@ -119,7 +122,7 @@ As a user on Shabbat (Saturday), I want the app to reduce its internal activity 
 - Device has access to location services (GPS or network-based)
 - User is in a location where sunrise/sunset can be calculated (not extreme polar regions)
 - Device has accurate system time and timezone settings
-- User follows standard timing customs (18-20 min before sunset for candles, 25-42 min after for Shabbat end)
+- User follows standard timing customs (18 min before sunset for candle lighting by default; 42 min after sunset for end of Shabbat by default — Rabbeinu Tam opinion)
 - Base ShabbatMode application framework is already implemented
 - Internet connectivity available for initial astronomical calculation library setup
 - Battery conservation mode is implemented entirely at the app level; no system-level Do Not Disturb or power-saving modes are activated — the visual and behavioral pattern is inspired by Do Not Disturb but is a custom, app-internal implementation

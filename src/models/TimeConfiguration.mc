@@ -24,9 +24,9 @@ class TimeConfiguration {
 
             // Shabbat time calculation settings
             "candle_lighting_offset" => 18,  // Minutes before sunset
-            "shabbat_end_offset" => 25,      // Minutes after sunset (Rabbenu Tam: 72)
-            "use_rabbenu_tam" => false,      // Use Rabbenu Tam's 72-minute opinion
-            "shabbat_end_custom" => 25,      // Custom end offset if not using Rabbenu Tam
+            "shabbat_end_offset" => 42,      // Minutes after sunset — Rabbeinu Tam (default)
+            "use_rabbenu_tam" => false,      // Use Rabbeinu Tam's strict 72-minute opinion
+            "shabbat_end_custom" => 42,      // Custom end offset if not using strict Rabbeinu Tam
 
             // Location and timezone settings
             "auto_location" => true,         // Use GPS for location
