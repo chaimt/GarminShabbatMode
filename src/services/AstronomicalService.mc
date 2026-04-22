@@ -86,8 +86,6 @@ class AstronomicalService {
         var data = new AstronomicalData();
 
         if (isPolar) {
-            // No reliable sunrise/sunset at extreme latitudes
-            var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
             data.configure(lat, lon, dayId, -1, -1, true);
         } else {
             var sunsetUtc  = SunCalculator.calculateSunsetAtZenithUTC(lat, lon, n, GEOMETRIC_ZENITH + 0.8333f);
@@ -96,7 +94,6 @@ class AstronomicalService {
             var sunsetLocal  = sunsetUtc  != null ? DateMath.normaliseDay(sunsetUtc  + utcOffset) : -1;
             var sunriseLocal = sunriseUtc != null ? DateMath.normaliseDay(sunriseUtc + utcOffset) : -1;
 
-            var info = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
             data.configure(lat, lon, dayId, sunriseLocal, sunsetLocal, false);
 
             if (_logger != null) {

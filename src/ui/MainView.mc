@@ -142,7 +142,7 @@ class MainView extends WatchUi.View {
             var middleY = screenHeight / 2;
             var bottomY = screenHeight * 2 / 3;
 
-            var appName = WatchUi.loadResource(Rez.Strings.AppName) as String;
+            var appName = WatchUi.loadResource(Rez.Strings.AppName) as Lang.String;
             if (_configService != null) {
                 appName = _configService.getAppName();
             }
@@ -180,7 +180,7 @@ class MainView extends WatchUi.View {
     // Shabbat is active: show the current time prominently.
     private function updateShabbatDisplay() as Void {
         if (_appNameComponent != null) {
-            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.ShabbatActive) as String);
+            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.ShabbatActive) as Lang.String);
             _appNameComponent.setTextColor(Graphics.COLOR_YELLOW);
         }
 
@@ -200,7 +200,7 @@ class MainView extends WatchUi.View {
             if (_shabbatService != null) {
                 var endsAt = _shabbatService.getNightfallTimeString();
                 _statusComponent.setText(
-                    (WatchUi.loadResource(Rez.Strings.ConservationEndsPrefix) as String) + " " + endsAt
+                    (WatchUi.loadResource(Rez.Strings.ConservationEndsPrefix) as Lang.String) + " " + endsAt
                 );
             } else {
                 _statusComponent.setText("");
@@ -214,7 +214,7 @@ class MainView extends WatchUi.View {
     // Shows time without seconds; end-of-Shabbat shown in dim text (FR-012).
     private function updateConservationDisplay() as Void {
         if (_appNameComponent != null) {
-            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.ShabbatActive) as String);
+            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.ShabbatActive) as Lang.String);
             _appNameComponent.setTextColor(Graphics.COLOR_DK_GRAY);
         }
 
@@ -233,7 +233,7 @@ class MainView extends WatchUi.View {
             var statusText = "";
             if (_shabbatService != null) {
                 var endsAt = _shabbatService.getNightfallTimeString();
-                statusText = (WatchUi.loadResource(Rez.Strings.ConservationEndsPrefix) as String) + " " + endsAt;
+                statusText = (WatchUi.loadResource(Rez.Strings.ConservationEndsPrefix) as Lang.String) + " " + endsAt;
             }
             _statusComponent.setText(statusText);
             _statusComponent.setTextColor(Graphics.COLOR_DK_GRAY);
@@ -243,7 +243,7 @@ class MainView extends WatchUi.View {
     // Shabbat is not active: show countdown to the next Shabbat.
     private function updateCountdownDisplay() as Void {
         if (_appNameComponent != null) {
-            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.AppName) as String);
+            _appNameComponent.setText(WatchUi.loadResource(Rez.Strings.AppName) as Lang.String);
             _appNameComponent.setTextColor(Graphics.COLOR_WHITE);
         }
 
@@ -265,9 +265,9 @@ class MainView extends WatchUi.View {
         }
 
         if (_statusComponent != null) {
-            var statusText = WatchUi.loadResource(Rez.Strings.ShabbatCountdown) as String;
+            var statusText = WatchUi.loadResource(Rez.Strings.ShabbatCountdown) as Lang.String;
             if (_shabbatService != null && !_shabbatService.hasLocation()) {
-                statusText = WatchUi.loadResource(Rez.Strings.LocationNeeded) as String;
+                statusText = WatchUi.loadResource(Rez.Strings.LocationNeeded) as Lang.String;
             }
             _statusComponent.setText(statusText);
             _statusComponent.setTextColor(Graphics.COLOR_LT_GRAY);
@@ -288,7 +288,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height * 7 / 8,
                 Graphics.FONT_SMALL,
-                WatchUi.loadResource(Rez.Strings.FirstRunMessage) as String,
+                WatchUi.loadResource(Rez.Strings.FirstRunMessage) as Lang.String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
         } catch (ex instanceof Lang.Exception) {
@@ -306,7 +306,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height / 2 - 20,
                 Graphics.FONT_MEDIUM,
-                WatchUi.loadResource(Rez.Strings.ShabbatModeTitle) as String,
+                WatchUi.loadResource(Rez.Strings.ShabbatModeTitle) as Lang.String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 
@@ -315,7 +315,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height / 2 + 20,
                 Graphics.FONT_SMALL,
-                WatchUi.loadResource(Rez.Strings.InitializationError) as String,
+                WatchUi.loadResource(Rez.Strings.InitializationError) as Lang.String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 
@@ -323,7 +323,7 @@ class MainView extends WatchUi.View {
                 width / 2,
                 height / 2 + 40,
                 Graphics.FONT_TINY,
-                WatchUi.loadResource(Rez.Strings.RestartRequired) as String,
+                WatchUi.loadResource(Rez.Strings.RestartRequired) as Lang.String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
 

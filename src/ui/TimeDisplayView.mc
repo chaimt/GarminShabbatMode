@@ -133,8 +133,8 @@ class TimeDisplayView extends WatchUi.View {
 
         // ── Row 0: App / mode label ──────────────────────────────────────────
         var modeLabel = isShabbat
-            ? (WatchUi.loadResource(Rez.Strings.ShabbatActive) as String)
-            : (WatchUi.loadResource(Rez.Strings.AppName) as String);
+            ? (WatchUi.loadResource(Rez.Strings.ShabbatActive) as Lang.String)
+            : (WatchUi.loadResource(Rez.Strings.AppName) as Lang.String);
         var modeColor = isShabbat ? Graphics.COLOR_YELLOW : Graphics.COLOR_WHITE;
         dc.setColor(modeColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, row0Y, Graphics.FONT_SMALL, modeLabel,
@@ -180,7 +180,7 @@ class TimeDisplayView extends WatchUi.View {
         }
         dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, row3Y, Graphics.FONT_SMALL,
-            (WatchUi.loadResource(Rez.Strings.CandleLightingLabel) as String) + ": " + candleStr,
+            (WatchUi.loadResource(Rez.Strings.CandleLightingLabel) as Lang.String) + ": " + candleStr,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ── Row 4: End of Shabbat ────────────────────────────────────────────
@@ -193,21 +193,21 @@ class TimeDisplayView extends WatchUi.View {
         }
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, row4Y, Graphics.FONT_TINY,
-            (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as String) + ": " + endStr,
+            (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as Lang.String) + ": " + endStr,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ── Location / data quality indicator ────────────────────────────────
         if (_shabbatService != null && !_shabbatService.hasLocation()) {
             dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
             dc.drawText(cx, h - h / 14, Graphics.FONT_TINY,
-                WatchUi.loadResource(Rez.Strings.LocationNeeded) as String,
+                WatchUi.loadResource(Rez.Strings.LocationNeeded) as Lang.String,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         } else if (_astronomicalService != null && _astronomicalService.hasData()) {
             var data = _astronomicalService.getAstronomicalData();
             if (data != null && data.isPolarRegion()) {
                 dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
                 dc.drawText(cx, h - h / 14, Graphics.FONT_TINY,
-                    WatchUi.loadResource(Rez.Strings.PolarWarning) as String,
+                    WatchUi.loadResource(Rez.Strings.PolarWarning) as Lang.String,
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             }
         }
@@ -216,7 +216,7 @@ class TimeDisplayView extends WatchUi.View {
     private function _drawError(dc as Graphics.Dc) as Void {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_screenWidth / 2, _screenHeight / 2, Graphics.FONT_SMALL,
-            WatchUi.loadResource(Rez.Strings.TimeDisplayError) as String,
+            WatchUi.loadResource(Rez.Strings.TimeDisplayError) as Lang.String,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
