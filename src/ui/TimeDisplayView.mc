@@ -229,8 +229,31 @@ class TimeDisplayView extends WatchUi.View {
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ── Row 5: Parashat HaShavua / location status ───────────────────────
-        // Priority: location/GPS status warnings override the parasha display.
-        if (_shabbatService != null && !_shabbatService.hasLocation()) {
+        // Priority order:
+        //   1. Manual source — no coords configured → prompt
+        //   2. Manual source — coords configured → "Manual" indicator
+        //   3. GPS source — GPS acquiring → "acquiring…" status
+        //   4. GPS source — no location → prompt
+        //   5. Polar region warning
+        //   6. Normal: Parashat HaShavua
+        var locConfig = new TimeConfiguration();
+        var isManualMode = locConfig.getLocationSource().equals("manual");
+        var hasManualCoords = LocationValidator.hasValidManualCoords(
+            locConfig.getManualLatitude(), locConfig.getManualLongitude());
+
+        if (isManualMode && !hasManualCoords) {
+            // Manual mode selected but no coordinates set yet
+            dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, row5Y, Graphics.FONT_TINY,
+                WatchUi.loadResource(Rez.Strings.ManualLocNoCoords) as Lang.String,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        } else if (isManualMode && hasManualCoords) {
+            // Manual mode with valid coordinates — show compact indicator
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, row5Y, Graphics.FONT_TINY,
+                WatchUi.loadResource(Rez.Strings.LocationIndicatorManual) as Lang.String,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        } else if (_shabbatService != null && !_shabbatService.hasLocation()) {
             if (_astronomicalService != null && _astronomicalService.isGpsTracking()) {
                 // GPS is actively acquiring a fix — reassure the user
                 dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
