@@ -142,13 +142,15 @@ class TimeDisplayView extends WatchUi.View {
 
     // Lay out 6 rows across the screen height.
     //
-    //  Row 0 – label "Shabbat"          (small, top)
-    //  Row 1 – current time HH:MM       (large, prominent)
-    //  Row 2 – Sunrise / Sunset pair    (small)
-    //  Row 3 – Candle lighting          (small)
-    //  Row 4 – Shabbat ends             (small)
-    //  Row 5 – Parashat HaShavua        (tiny, bottom)
-    //          or GPS-acquiring / location-needed indicator
+    //  Row 0 – app/mode label  OR  location error badge  (small/tiny, top)
+    //  Row 1 – current time HH:MM                        (large, prominent)
+    //  Row 2 – Sunrise / Sunset pair                     (small)
+    //  Row 3 – Candle lighting                           (small)
+    //  Row 4 – Shabbat ends                              (small)
+    //  Row 5 – Parashat HaShavua                         (tiny, bottom)
+    //
+    // The parasha (Row 5) is always shown — it is calendar-only and does not
+    // depend on a GPS fix.  Location error messages replace Row 0 instead.
     private function _drawAllRows(dc as Graphics.Dc) as Void {
         var w  = _screenWidth;
         var h  = _screenHeight;
@@ -164,14 +166,44 @@ class TimeDisplayView extends WatchUi.View {
 
         var isShabbat = (_shabbatService != null && _shabbatService.isShabbat());
 
-        // ── Row 0: App / mode label ──────────────────────────────────────────
-        var modeLabel = isShabbat
-            ? (WatchUi.loadResource(Rez.Strings.ShabbatActive) as Lang.String)
-            : (WatchUi.loadResource(Rez.Strings.AppName) as Lang.String);
-        var modeColor = isShabbat ? Graphics.COLOR_YELLOW : Graphics.COLOR_WHITE;
-        dc.setColor(modeColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, row0Y, Graphics.FONT_SMALL, modeLabel,
-            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        // ── Determine location status for Row 0 ─────────────────────────────
+        var locConfig = new TimeConfiguration();
+        var isManualMode = locConfig.getLocationSource().equals("manual");
+        var hasManualCoords = LocationValidator.hasValidManualCoords(
+            locConfig.getManualLatitude(), locConfig.getManualLongitude());
+        var hasNoLocation = !isManualMode
+            && _shabbatService != null
+            && !_shabbatService.hasLocation();
+
+        // ── Row 0: App / mode label  OR  location error ──────────────────────
+        if (isManualMode && !hasManualCoords) {
+            // Manual mode but no coordinates configured yet — actionable prompt
+            dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, row0Y, Graphics.FONT_TINY,
+                WatchUi.loadResource(Rez.Strings.ManualLocNoCoords) as Lang.String,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        } else if (hasNoLocation && _astronomicalService != null && _astronomicalService.isGpsTracking()) {
+            // GPS fix in progress
+            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, row0Y, Graphics.FONT_TINY,
+                WatchUi.loadResource(Rez.Strings.GpsAcquiring) as Lang.String,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        } else if (hasNoLocation) {
+            // GPS mode, not acquiring, no location
+            dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, row0Y, Graphics.FONT_TINY,
+                WatchUi.loadResource(Rez.Strings.LocationNeeded) as Lang.String,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        } else {
+            // Normal: show app / Shabbat mode label
+            var modeLabel = isShabbat
+                ? (WatchUi.loadResource(Rez.Strings.ShabbatActive) as Lang.String)
+                : (WatchUi.loadResource(Rez.Strings.AppName) as Lang.String);
+            var modeColor = isShabbat ? Graphics.COLOR_YELLOW : Graphics.COLOR_WHITE;
+            dc.setColor(modeColor, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, row0Y, Graphics.FONT_SMALL, modeLabel,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
 
         // ── Row 1: Current time HH:MM (seconds never shown) ─────────────────
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
@@ -216,6 +248,10 @@ class TimeDisplayView extends WatchUi.View {
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ── Row 4: End of Shabbat ────────────────────────────────────────────
+        // On Fri/Sat: use ShabbatWindowService (which knows tonight's actual tzais).
+        // On Sun–Thu: ShabbatWindowService returns "00:00" because it only tracks the
+        // active/upcoming Shabbat window; fall back to sunset + configured end offset
+        // so a meaningful time is always shown (same pattern as candle lighting row).
         var endStr = TimeFormatter.unavailable();
         if (_shabbatService != null) {
             var nightfall = _shabbatService.getNightfallTimeString();
@@ -223,67 +259,29 @@ class TimeDisplayView extends WatchUi.View {
                 endStr = nightfall;
             }
         }
+        if (endStr.equals(TimeFormatter.unavailable()) &&
+                _astronomicalService != null && _astronomicalService.hasData()) {
+            var endConfig = new TimeConfiguration();
+            var endOffset = endConfig.getShabbatEndOffset();
+            var endData = _astronomicalService.getAstronomicalData();
+            if (endData != null && endData.hasSunset()) {
+                var endSecs = endData.getSunsetLocalSeconds() + endOffset * 60;
+                endStr = TimeFormatter.secondsToHHMM(endSecs);
+            }
+        }
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, row4Y, Graphics.FONT_TINY,
             (WatchUi.loadResource(Rez.Strings.HavdalahLabel) as Lang.String) + ": " + endStr,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
-        // ── Row 5: Parashat HaShavua / location status ───────────────────────
-        // Priority order:
-        //   1. Manual source — no coords configured → prompt
-        //   2. Manual source — coords configured → "Manual" indicator
-        //   3. GPS source — GPS acquiring → "acquiring…" status
-        //   4. GPS source — no location → prompt
-        //   5. Polar region warning
-        //   6. Normal: Parashat HaShavua
-        var locConfig = new TimeConfiguration();
-        var isManualMode = locConfig.getLocationSource().equals("manual");
-        var hasManualCoords = LocationValidator.hasValidManualCoords(
-            locConfig.getManualLatitude(), locConfig.getManualLongitude());
-
-        if (isManualMode && !hasManualCoords) {
-            // Manual mode selected but no coordinates set yet
-            dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, row5Y, Graphics.FONT_TINY,
-                WatchUi.loadResource(Rez.Strings.ManualLocNoCoords) as Lang.String,
-                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-        } else if (isManualMode && hasManualCoords) {
-            // Manual mode with valid coordinates — show compact indicator
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, row5Y, Graphics.FONT_TINY,
-                WatchUi.loadResource(Rez.Strings.LocationIndicatorManual) as Lang.String,
-                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-        } else if (_shabbatService != null && !_shabbatService.hasLocation()) {
-            if (_astronomicalService != null && _astronomicalService.isGpsTracking()) {
-                // GPS is actively acquiring a fix — reassure the user
-                dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(cx, row5Y, Graphics.FONT_TINY,
-                    WatchUi.loadResource(Rez.Strings.GpsAcquiring) as Lang.String,
-                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-            } else {
-                // No location and GPS not active — prompt user to set location
-                dc.setColor(Graphics.COLOR_DK_RED, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(cx, row5Y, Graphics.FONT_TINY,
-                    WatchUi.loadResource(Rez.Strings.LocationNeeded) as Lang.String,
-                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-            }
-        } else if (_astronomicalService != null && _astronomicalService.hasData()) {
-            var data = _astronomicalService.getAstronomicalData();
-            if (data != null && data.isPolarRegion()) {
-                dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(cx, row5Y, Graphics.FONT_TINY,
-                    WatchUi.loadResource(Rez.Strings.PolarWarning) as Lang.String,
-                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-            } else {
-                // Normal state: show the weekly parasha
-                _drawParasha(dc, cx, row5Y);
-            }
-        } else {
-            _drawParasha(dc, cx, row5Y);
-        }
+        // ── Row 5: Parashat HaShavua ─────────────────────────────────────────
+        // Always shown — parasha is calendar-only and needs no GPS fix.
+        _drawParasha(dc, cx, row5Y);
     }
 
     // Draw the current week's parasha name at the given position.
+    // When a special Shabbat (Arba Parashiyot or named Shabbos) is active,
+    // the special name is appended in parentheses and rendered in yellow.
     private function _drawParasha(dc as Graphics.Dc, cx as Lang.Number, y as Lang.Number) as Void {
         if (_parashaService == null) {
             return;
@@ -294,7 +292,10 @@ class TimeDisplayView extends WatchUi.View {
             var name     = _parashaService.getParashaName(isIsrael);
             if (!name.equals("--")) {
                 var label = (WatchUi.loadResource(Rez.Strings.ParashaLabel) as Lang.String) + " " + name;
-                dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+                // Use yellow to highlight special Shabbatot (Shekalim, Zachor, etc.)
+                var specIdx = _parashaService.getSpecialShabbosIndex(isIsrael);
+                var color = (specIdx >= 200) ? Graphics.COLOR_YELLOW : Graphics.COLOR_LT_GRAY;
+                dc.setColor(color, Graphics.COLOR_TRANSPARENT);
                 dc.drawText(cx, y, Graphics.FONT_TINY, label,
                     Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
             }

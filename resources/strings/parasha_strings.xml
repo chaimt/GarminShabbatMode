@@ -75,6 +75,17 @@
     <string id="Parasha_MatotMasei">Matot-Masei</string>
     <string id="Parasha_NitzavimVayelech">Nitzavim-Vayelech</string>
 
+    <!-- Special Shabbatot (Arba Parashiyot + named Shabbasos) -->
+    <string id="Shabbat_Shekalim">Shabbat Shekalim</string>
+    <string id="Shabbat_Zachor">Shabbat Zachor</string>
+    <string id="Shabbat_Para">Shabbat Para</string>
+    <string id="Shabbat_Hachodesh">Shabbat Hachodesh</string>
+    <string id="Shabbat_Hagadol">Shabbat HaGadol</string>
+    <string id="Shabbat_Chazon">Shabbat Chazon</string>
+    <string id="Shabbat_Nachamu">Shabbat Nachamu</string>
+    <string id="Shabbat_Shuva">Shabbat Shuva</string>
+    <string id="Shabbat_Shira">Shabbat Shira</string>
+
     <!-- UI labels -->
     <string id="ParashaLabel">Parasha:</string>
     <string id="ParashaUnavailable">--</string>

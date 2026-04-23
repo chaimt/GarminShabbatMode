@@ -57,6 +57,78 @@
             "execution_mode": "ASYNC",
             "status": "pending",
             "phase": "Phase 8"
+        },
+        "T112": {
+            "id": "T112",
+            "description": "Validate HebrewCalendarService date conversion accuracy via simulator println for 3 known dates",
+            "files": ["src/services/HebrewCalendarService.mc", "src/ui/TimeDisplayView.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T113": {
+            "id": "T113",
+            "description": "Validate HebrewCalendarService.roshHashanaDayOfWeek() for years 5784, 5785, 5786",
+            "files": ["src/services/HebrewCalendarService.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T114": {
+            "id": "T114",
+            "description": "Validate standard parasha: simulator April 18 2026 returns Shemini for both Israel and Diaspora",
+            "files": ["src/services/ParashaService.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T115": {
+            "id": "T115",
+            "description": "Validate Israel/Diaspora divergence: April 25 2026 returns Tazria-Metzora (Diaspora) vs Tazria (Israel)",
+            "files": ["src/services/ParashaService.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T116": {
+            "id": "T116",
+            "description": "Validate Yom Tov week graceful fallback: April 11 2026 returns -- without crash",
+            "files": ["src/services/ParashaService.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T117": {
+            "id": "T117",
+            "description": "Validate leap-year separate parasha: April 19 2025 (5785 leap) returns Tazria not combined",
+            "files": ["src/services/ParashaService.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T118": {
+            "id": "T118",
+            "description": "Validate Shabbat Zachor detection and yellow highlight: March 7 2026 returns index 201 + yellow color",
+            "files": ["src/services/ParashaService.mc", "src/ui/TimeDisplayView.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T119": {
+            "id": "T119",
+            "description": "Validate Shabbat Shira detection: Feb 7 2026 (Beshalach week) returns index 208",
+            "files": ["src/services/ParashaService.mc"],
+            "execution_mode": "SYNC",
+            "status": "pending",
+            "phase": "Phase 18"
+        },
+        "T120": {
+            "id": "T120",
+            "description": "Validate Row 5 layout: parasha text fits at 240px, does not overlap Row 4, GPS errors don't suppress Row 5",
+            "files": ["src/ui/TimeDisplayView.mc"],
+            "execution_mode": "ASYNC",
+            "status": "pending",
+            "phase": "Phase 18"
         }
     }
 }

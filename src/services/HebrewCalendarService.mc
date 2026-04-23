@@ -145,6 +145,72 @@ class HebrewCalendarService {
         return hebrewDayOfYear(now.year, now.month, now.day);
     }
 
+    // True when Cheshvan has 30 days (year is "complete": 355 or 385 days).
+    static function isCheshvanLong(year as Lang.Number) as Lang.Boolean {
+        return daysInHebrewYear(year) % 10 == 5;
+    }
+
+    // True when Kislev has 29 days (year is "deficient": 353 or 383 days).
+    static function isKislevShort(year as Lang.Number) as Lang.Boolean {
+        return daysInHebrewYear(year) % 10 == 3;
+    }
+
+    // Day of week that 1 Tishrei (Rosh Hashana) falls on for the given year.
+    // Returns a value in Java Calendar scale: 2=Mon, 3=Tue, 5=Thu, 7=Sat.
+    // (Rosh Hashana is always Mon, Tue, Thu, or Sat per the dehiyyot rules.)
+    // Matches KosherJava JewishCalendar.getParshaYearType() computation:
+    //   (getJewishCalendarElapsedDays(year) + 1) % 7, with 0 → 7 for Shabbat.
+    static function roshHashanaDayOfWeek(year as Lang.Number) as Lang.Number {
+        var dow = ((elapsedDaysHebrewYear(year) + 1l) % 7l) as Lang.Number;
+        if (dow == 0) { dow = 7; }
+        return dow;
+    }
+
+    // Month number (1 = Tishrei) that contains the given day-of-year within
+    // the Hebrew year.  In a leap year there are 13 months; in a regular year 12.
+    static function hebrewMonthForDayOfYear(year as Lang.Number, dayOfYear as Lang.Number) as Lang.Number {
+        var lengths = _monthLengths(year);
+        var numMonths = isHebrewLeapYear(year) ? 13 : 12;
+        var cum = 0;
+        for (var m = 0; m < numMonths; m++) {
+            cum += lengths[m];
+            if (dayOfYear <= cum) {
+                return m + 1;
+            }
+        }
+        return numMonths;
+    }
+
+    // Day within the Hebrew month (1-based) for the given day-of-year.
+    static function hebrewDayOfMonthForDayOfYear(year as Lang.Number, dayOfYear as Lang.Number) as Lang.Number {
+        var lengths = _monthLengths(year);
+        var numMonths = isHebrewLeapYear(year) ? 13 : 12;
+        var cum = 0;
+        for (var m = 0; m < numMonths; m++) {
+            cum += lengths[m];
+            if (dayOfYear <= cum) {
+                return dayOfYear - (cum - lengths[m]);
+            }
+        }
+        return dayOfYear;
+    }
+
+    // Today's Hebrew month (1 = Tishrei), derived from device clock.
+    static function todayHebrewMonth() as Lang.Number {
+        var now  = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+        var year = gregorianToHebrewYear(now.year, now.month, now.day);
+        var doy  = hebrewDayOfYear(now.year, now.month, now.day);
+        return hebrewMonthForDayOfYear(year, doy);
+    }
+
+    // Today's Hebrew day-of-month (1-based), derived from device clock.
+    static function todayHebrewDay() as Lang.Number {
+        var now  = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+        var year = gregorianToHebrewYear(now.year, now.month, now.day);
+        var doy  = hebrewDayOfYear(now.year, now.month, now.day);
+        return hebrewDayOfMonthForDayOfYear(year, doy);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -159,5 +225,50 @@ class HebrewCalendarService {
         // Add leap months for years within the partial cycle
         months = months + ((7l * (remainder as Lang.Long) + 1l) / 19l);
         return months;
+    }
+
+    // Returns an array of month lengths (in days) for the given Hebrew year,
+    // indexed 0-based from Tishrei.  Leap years have 13 entries, regular 12.
+    // Month order from Tishrei:
+    //   1=Tishrei, 2=Cheshvan, 3=Kislev, 4=Tevet, 5=Shevat,
+    //   6=Adar (non-leap) / Adar-I (leap),
+    //   7=Nissan (non-leap) / Adar-II (leap),
+    //   8=Iyar (non-leap) / Nissan (leap),
+    //   9..12/13 continue alternating 30/29.
+    private static function _monthLengths(year as Lang.Number) as Lang.Array<Lang.Number> {
+        var isLeap = isHebrewLeapYear(year);
+        var chLong = isCheshvanLong(year);
+        var kiShort = isKislevShort(year);
+        if (isLeap) {
+            return [
+                30,              // 1  Tishrei
+                chLong ? 30 : 29, // 2  Cheshvan
+                kiShort ? 29 : 30, // 3  Kislev
+                29,              // 4  Tevet
+                30,              // 5  Shevat
+                30,              // 6  Adar I
+                29,              // 7  Adar II
+                30,              // 8  Nissan
+                29,              // 9  Iyar
+                30,              // 10 Sivan
+                29,              // 11 Tammuz
+                30,              // 12 Av
+                29               // 13 Elul
+            ] as Lang.Array<Lang.Number>;
+        }
+        return [
+            30,              // 1  Tishrei
+            chLong ? 30 : 29, // 2  Cheshvan
+            kiShort ? 29 : 30, // 3  Kislev
+            29,              // 4  Tevet
+            30,              // 5  Shevat
+            29,              // 6  Adar
+            30,              // 7  Nissan
+            29,              // 8  Iyar
+            30,              // 9  Sivan
+            29,              // 10 Tammuz
+            30,              // 11 Av
+            29               // 12 Elul
+        ] as Lang.Array<Lang.Number>;
     }
 }
