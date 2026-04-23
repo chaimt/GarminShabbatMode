@@ -289,18 +289,115 @@ class TimeDisplayView extends WatchUi.View {
         try {
             var config   = new TimeConfiguration();
             var isIsrael = config.getRegion().equals("israel");
-            var name     = _parashaService.getParashaName(isIsrael);
-            if (!name.equals("--")) {
-                var label = (WatchUi.loadResource(Rez.Strings.ParashaLabel) as Lang.String) + " " + name;
-                // Use yellow to highlight special Shabbatot (Shekalim, Zachor, etc.)
-                var specIdx = _parashaService.getSpecialShabbosIndex(isIsrael);
-                var color = (specIdx >= 200) ? Graphics.COLOR_YELLOW : Graphics.COLOR_LT_GRAY;
-                dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(cx, y, Graphics.FONT_TINY, label,
-                    Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            var index    = _parashaService.getParashaIndexForToday(isIsrael);
+            if (index < 0) {
+                return;
             }
+            var name = _parashaStringForIndex(index);
+            if (name.equals("")) {
+                return;
+            }
+            var specIdx = _parashaService.getSpecialShabbosIndex(isIsrael);
+            if (specIdx >= 200 && specIdx <= 208) {
+                var specName = _specialShabbatStringForIndex(specIdx);
+                if (!specName.equals("")) {
+                    name = name + " (" + specName + ")";
+                }
+            }
+            var label = (WatchUi.loadResource(Rez.Strings.ParashaLabel) as Lang.String) + " " + name;
+            var color = (specIdx >= 200) ? Graphics.COLOR_YELLOW : Graphics.COLOR_LT_GRAY;
+            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, y, Graphics.FONT_TINY, label,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         } catch (ex instanceof Lang.Exception) {
             // Parasha unavailable — Row 5 stays blank
+        }
+    }
+
+    // Load a parasha name from parasha_strings.xml using compile-time-resolved
+    // Rez.Strings references (dynamic Rez.Strings[key] is unreliable in CIQ).
+    // Returns "" for any unrecognised index.
+    private function _parashaStringForIndex(index as Lang.Number) as Lang.String {
+        switch (index) {
+            case 0:   return WatchUi.loadResource(Rez.Strings.Parasha_Bereshit) as Lang.String;
+            case 1:   return WatchUi.loadResource(Rez.Strings.Parasha_Noach) as Lang.String;
+            case 2:   return WatchUi.loadResource(Rez.Strings.Parasha_LechLecha) as Lang.String;
+            case 3:   return WatchUi.loadResource(Rez.Strings.Parasha_Vayera) as Lang.String;
+            case 4:   return WatchUi.loadResource(Rez.Strings.Parasha_ChayeiSarah) as Lang.String;
+            case 5:   return WatchUi.loadResource(Rez.Strings.Parasha_Toldot) as Lang.String;
+            case 6:   return WatchUi.loadResource(Rez.Strings.Parasha_Vayetzei) as Lang.String;
+            case 7:   return WatchUi.loadResource(Rez.Strings.Parasha_Vayishlach) as Lang.String;
+            case 8:   return WatchUi.loadResource(Rez.Strings.Parasha_Vayeshev) as Lang.String;
+            case 9:   return WatchUi.loadResource(Rez.Strings.Parasha_Miketz) as Lang.String;
+            case 10:  return WatchUi.loadResource(Rez.Strings.Parasha_Vayigash) as Lang.String;
+            case 11:  return WatchUi.loadResource(Rez.Strings.Parasha_Vayechi) as Lang.String;
+            case 12:  return WatchUi.loadResource(Rez.Strings.Parasha_Shemot) as Lang.String;
+            case 13:  return WatchUi.loadResource(Rez.Strings.Parasha_Vaera) as Lang.String;
+            case 14:  return WatchUi.loadResource(Rez.Strings.Parasha_Bo) as Lang.String;
+            case 15:  return WatchUi.loadResource(Rez.Strings.Parasha_Beshalach) as Lang.String;
+            case 16:  return WatchUi.loadResource(Rez.Strings.Parasha_Yitro) as Lang.String;
+            case 17:  return WatchUi.loadResource(Rez.Strings.Parasha_Mishpatim) as Lang.String;
+            case 18:  return WatchUi.loadResource(Rez.Strings.Parasha_Terumah) as Lang.String;
+            case 19:  return WatchUi.loadResource(Rez.Strings.Parasha_Tetzaveh) as Lang.String;
+            case 20:  return WatchUi.loadResource(Rez.Strings.Parasha_KiTisa) as Lang.String;
+            case 21:  return WatchUi.loadResource(Rez.Strings.Parasha_Vayakhel) as Lang.String;
+            case 22:  return WatchUi.loadResource(Rez.Strings.Parasha_Pekudei) as Lang.String;
+            case 23:  return WatchUi.loadResource(Rez.Strings.Parasha_Vayikra) as Lang.String;
+            case 24:  return WatchUi.loadResource(Rez.Strings.Parasha_Tzav) as Lang.String;
+            case 25:  return WatchUi.loadResource(Rez.Strings.Parasha_Shemini) as Lang.String;
+            case 26:  return WatchUi.loadResource(Rez.Strings.Parasha_Tazria) as Lang.String;
+            case 27:  return WatchUi.loadResource(Rez.Strings.Parasha_Metzora) as Lang.String;
+            case 28:  return WatchUi.loadResource(Rez.Strings.Parasha_AchreiMot) as Lang.String;
+            case 29:  return WatchUi.loadResource(Rez.Strings.Parasha_Kedoshim) as Lang.String;
+            case 30:  return WatchUi.loadResource(Rez.Strings.Parasha_Emor) as Lang.String;
+            case 31:  return WatchUi.loadResource(Rez.Strings.Parasha_Behar) as Lang.String;
+            case 32:  return WatchUi.loadResource(Rez.Strings.Parasha_Bechukotai) as Lang.String;
+            case 33:  return WatchUi.loadResource(Rez.Strings.Parasha_Bamidbar) as Lang.String;
+            case 34:  return WatchUi.loadResource(Rez.Strings.Parasha_Nasso) as Lang.String;
+            case 35:  return WatchUi.loadResource(Rez.Strings.Parasha_Behaalotecha) as Lang.String;
+            case 36:  return WatchUi.loadResource(Rez.Strings.Parasha_Shelach) as Lang.String;
+            case 37:  return WatchUi.loadResource(Rez.Strings.Parasha_Korach) as Lang.String;
+            case 38:  return WatchUi.loadResource(Rez.Strings.Parasha_Chukat) as Lang.String;
+            case 39:  return WatchUi.loadResource(Rez.Strings.Parasha_Balak) as Lang.String;
+            case 40:  return WatchUi.loadResource(Rez.Strings.Parasha_Pinchas) as Lang.String;
+            case 41:  return WatchUi.loadResource(Rez.Strings.Parasha_Matot) as Lang.String;
+            case 42:  return WatchUi.loadResource(Rez.Strings.Parasha_Masei) as Lang.String;
+            case 43:  return WatchUi.loadResource(Rez.Strings.Parasha_Devarim) as Lang.String;
+            case 44:  return WatchUi.loadResource(Rez.Strings.Parasha_Vaetchanan) as Lang.String;
+            case 45:  return WatchUi.loadResource(Rez.Strings.Parasha_Eikev) as Lang.String;
+            case 46:  return WatchUi.loadResource(Rez.Strings.Parasha_ReEh) as Lang.String;
+            case 47:  return WatchUi.loadResource(Rez.Strings.Parasha_Shoftim) as Lang.String;
+            case 48:  return WatchUi.loadResource(Rez.Strings.Parasha_KiTeitzei) as Lang.String;
+            case 49:  return WatchUi.loadResource(Rez.Strings.Parasha_KiTavo) as Lang.String;
+            case 50:  return WatchUi.loadResource(Rez.Strings.Parasha_Nitzavim) as Lang.String;
+            case 51:  return WatchUi.loadResource(Rez.Strings.Parasha_Vayelech) as Lang.String;
+            case 52:  return WatchUi.loadResource(Rez.Strings.Parasha_Haazinu) as Lang.String;
+            case 53:  return WatchUi.loadResource(Rez.Strings.Parasha_VeZotHaBeracha) as Lang.String;
+            case 100: return WatchUi.loadResource(Rez.Strings.Parasha_VayakhlelPekudei) as Lang.String;
+            case 101: return WatchUi.loadResource(Rez.Strings.Parasha_TazriaMetzora) as Lang.String;
+            case 102: return WatchUi.loadResource(Rez.Strings.Parasha_AchreiKedoshim) as Lang.String;
+            case 103: return WatchUi.loadResource(Rez.Strings.Parasha_BeharBechukotai) as Lang.String;
+            case 104: return WatchUi.loadResource(Rez.Strings.Parasha_ChukatBalak) as Lang.String;
+            case 105: return WatchUi.loadResource(Rez.Strings.Parasha_MatotMasei) as Lang.String;
+            case 106: return WatchUi.loadResource(Rez.Strings.Parasha_NitzavimVayelech) as Lang.String;
+            default:  return "";
+        }
+    }
+
+    // Load a special Shabbat name from parasha_strings.xml (indices 200–208).
+    // Returns "" for any unrecognised index.
+    private function _specialShabbatStringForIndex(specIdx as Lang.Number) as Lang.String {
+        switch (specIdx) {
+            case 200: return WatchUi.loadResource(Rez.Strings.Shabbat_Shekalim) as Lang.String;
+            case 201: return WatchUi.loadResource(Rez.Strings.Shabbat_Zachor) as Lang.String;
+            case 202: return WatchUi.loadResource(Rez.Strings.Shabbat_Para) as Lang.String;
+            case 203: return WatchUi.loadResource(Rez.Strings.Shabbat_Hachodesh) as Lang.String;
+            case 204: return WatchUi.loadResource(Rez.Strings.Shabbat_Hagadol) as Lang.String;
+            case 205: return WatchUi.loadResource(Rez.Strings.Shabbat_Chazon) as Lang.String;
+            case 206: return WatchUi.loadResource(Rez.Strings.Shabbat_Nachamu) as Lang.String;
+            case 207: return WatchUi.loadResource(Rez.Strings.Shabbat_Shuva) as Lang.String;
+            case 208: return WatchUi.loadResource(Rez.Strings.Shabbat_Shira) as Lang.String;
+            default:  return "";
         }
     }
 

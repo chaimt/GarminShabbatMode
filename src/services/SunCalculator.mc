@@ -40,8 +40,9 @@ class SunCalculator {
     // KosherJava equivalent: NOAACalculator / getSunsetOffsetByDegrees(zenith)
     //
     // KosherJava reference (Lakewood NJ 40.096°N 74.222°W):
-    //   2026-04-22: standard sunset ~23:27 UTC (19:27 EDT), tzais 8.5° ~00:10 UTC (+43 min)
-    //   2025-12-21: standard sunset ~21:19 UTC (16:19 EST), tzais 8.5° ~22:01 UTC (+42 min)
+    //   2026-04-22: standard sunset ~23:42 UTC (19:42 EDT), tzais 8.5° ~00:25 UTC (+43 min)
+    //   2025-12-21: standard sunset ~21:34 UTC (16:34 EST), tzais 8.5° ~22:19 UTC (+45 min)
+    // Verified by verify-sun-calculator.py (offline Python port of this algorithm).
     static function calculateSunsetAtZenithUTC(lat as Lang.Float, lon as Lang.Float, n as Lang.Float, zenithDegrees as Lang.Float) as Lang.Number? {
         var pos = _computeSolarPosition(n);
         var delta  = pos.get(:delta)  as Lang.Float;
@@ -71,7 +72,7 @@ class SunCalculator {
     // KosherJava equivalent: NOAACalculator / getSunriseOffsetByDegrees(zenith)
     //
     // KosherJava reference (Lakewood NJ 40.096°N 74.222°W):
-    //   2026-04-22: standard sunrise ~09:47 UTC (05:47 EDT)
+    //   2026-04-22: standard sunrise ~10:08 UTC (06:08 EDT)
     //   2025-12-21: standard sunrise ~12:08 UTC (07:08 EST)
     static function calculateSunriseAtZenithUTC(lat as Lang.Float, lon as Lang.Float, n as Lang.Float, zenithDegrees as Lang.Float) as Lang.Number? {
         var pos = _computeSolarPosition(n);

@@ -247,8 +247,9 @@ class ParashaService {
         return _cachedSpecialIdx;
     }
 
-    // Returns the display name for the current week's parasha (and any special
-    // Shabbat annotation appended in parentheses).
+    // Returns the parasha index for the current week's Shabbat as a display
+    // string key (convenience wrapper — callers that need the raw index should
+    // use getParashaIndexForToday directly).
     // Returns "--" when there is no regular parasha reading.
     function getParashaName(isIsrael as Lang.Boolean) as Lang.String {
         try {
@@ -258,19 +259,7 @@ class ParashaService {
                 return "--";
             }
             var key = getParashaStringKey(index);
-            if (key.equals("")) {
-                return "--";
-            }
-            var name = WatchUi.loadResource(Rez.Strings[key]) as Lang.String;
-
-            // Append special Shabbat label when present
-            var specIdx = _cachedSpecialIdx;
-            if (specIdx >= 200 && specIdx <= 208) {
-                var specKey = SPECIAL_STRING_KEYS[specIdx - 200];
-                var specName = WatchUi.loadResource(Rez.Strings[specKey]) as Lang.String;
-                name = name + " (" + specName + ")";
-            }
-            return name;
+            return key.equals("") ? "--" : key;
         } catch (ex instanceof Lang.Exception) {
             return "--";
         }
@@ -288,6 +277,7 @@ class ParashaService {
         }
         return "";
     }
+
 
     // -------------------------------------------------------------------------
     // Private helpers

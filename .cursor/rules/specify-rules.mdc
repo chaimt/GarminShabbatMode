@@ -6,9 +6,11 @@ alwaysApply: true
 
 # ShabbatMode Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-22
+Auto-generated from all feature plans. Last updated: 2026-04-23
 
 ## Active Technologies
+- Monkey C (Connect IQ SDK 4.0+) + `Toybox.WatchUi`, `Toybox.Time.Gregorian`, `Toybox.Lang` (003-parasha-hashavua-us5)
+- No persistent storage required — parasha is computed on-device from the system clock (003-parasha-hashavua-us5)
 
 - (003-shabbat-time-display)
 
@@ -28,6 +30,7 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 003-parasha-hashavua-us5: Added Monkey C (Connect IQ SDK 4.0+) + `Toybox.WatchUi`, `Toybox.Time.Gregorian`, `Toybox.Lang`
 
 - 003-shabbat-time-display: Added
 

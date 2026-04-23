@@ -13,18 +13,19 @@ using Toybox.Time.Gregorian;
 // JewishCalendar implementation.
 class HebrewCalendarService {
 
-    // Hebrew epoch: Julian Day of 1 Tishrei 1 AM = JD 347,996
-    // (Gregorian proleptic: Monday, 7 Oct 3761 BCE)
-    private static const HEBREW_EPOCH_JD = 347996l;
+    // Hebrew epoch: Julian Day of 1 Tishrei 1 AM = JDN 347,997
+    // (Gregorian proleptic: 5 September 3761 BCE)
+    // Consistent with KosherJava JEWISH_EPOCH = -1373429 (R.D.) + JDN(Jan 1, 1CE).
+    private static const HEBREW_EPOCH_JD = 347997l;
 
     // Seconds in a halak (smallest Talmudic time unit): 1 hour / 1080
     private static const CHALAKIM_PER_HOUR = 1080l;
     private static const CHALAKIM_PER_DAY  = 25920l;   // 24 * 1080
 
-    // Molad Tohu: reference new moon — 2d 5h 204 chalakim
-    // expressed as chalakim from epoch start of Sunday 0h:
-    //   2 days * 25920 + 5 * 1080 + 204 = 51840 + 5400 + 204 = 57444
-    private static const MOLAD_TOHU = 57444l;
+    // Molad Tohu: reference new moon — 1d 5h 204 chalakim from the start of Sunday.
+    // Matches KosherJava CHALAKIM_MOLAD_TOHU = 31524.
+    //   1 day * 25920 + 5 * 1080 + 204 = 25920 + 5400 + 204 = 31524
+    private static const MOLAD_TOHU = 31524l;
 
     // Average month length in chalakim: 29d 12h 793 chalakim
     //   = 29*25920 + 12*1080 + 793 = 765433
@@ -98,18 +99,22 @@ class HebrewCalendarService {
         return 3;                   // 355 or 385
     }
 
-    // Convert a proleptic Gregorian date to a Julian Day Number.
-    // Returns a Long.
+    // Convert a proleptic Gregorian date to a Julian Day Number (JDN).
+    //
+    // Standard Gregorian→JDN algorithm (Calendar FAQ, Claus Tøndering):
+    //   a = (14 − month) / 12
+    //   y = year + 4800 − a
+    //   m = month + 12·a − 3
+    //   JDN = day + (153·m + 2)/5 + 365·y + y/4 − y/100 + y/400 − 32045
+    //
+    // Using Lang.Long throughout to avoid 32-bit overflow; current JD ≈ 2.46 M.
+    // Reference epoch: JDN 347996 = 5 September 3761 BCE (proleptic Gregorian) = 1 Tishrei 1 AM.
     static function julianDayFromGregorian(year as Lang.Number, month as Lang.Number, day as Lang.Number) as Lang.Long {
-        var y = year as Lang.Long;
-        var m = month as Lang.Long;
-        var d = day as Lang.Long;
-        if (m <= 2l) {
-            y = y - 1l;
-            m = m + 12l;
-        }
-        var a = y / 4l - y / 100l + y / 400l;
-        return 365l * y + a + (153l * m + 8l) / 5l + d - 32045l;
+        var a = (14l - month) / 12l;
+        var y = (year as Lang.Long) + 4800l - a;
+        var m = (month as Lang.Long) + 12l * a - 3l;
+        var A = y / 400l - y / 100l + y / 4l;
+        return 365l * y + A + (153l * m + 2l) / 5l + (day as Lang.Long) - 32045l;
     }
 
     // Hebrew year that contains the given Gregorian date.
