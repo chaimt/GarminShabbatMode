@@ -1,37 +1,37 @@
-# Implementation Plan: Shabbat Time Display
+# Implementation Plan: Parashat HaShavua Display (US5)
 
-**Branch**: `003-shabbat-time-display` | **Date**: 2026-04-22 | **Spec**: [spec.md](./spec.md)  
-**Input**: Feature specification from `/specs/003-shabbat-time-display/spec.md`
+**Branch**: `feature/003-parasha-hashavua-us5` | **Date**: 2026-04-23 | **Spec**: [spec.md](spec.md)  
+**Input**: Feature specification from `/specs/003-shabbat-time-display/spec.md` — User Story 5 (FR-015, FR-016)
 
 ## Summary
 
-Implement a comprehensive time-display system for the ShabbatMode Garmin watch app that shows current time, astronomical sunrise/sunset, candle lighting time, and end-of-Shabbat time. All astronomical calculations are implemented in Monkey C using the NOAA Simplified Solar Algorithm — the same algorithm used by the KosherJava Zmanim reference library (https://kosherjava.com/zmanim-project/) — ported to the Garmin Connect IQ runtime environment. The feature also introduces Shabbat battery conservation mode: an app-level activity reduction (not system DND) that cuts screen refresh by 97% and GPS polling by 6× during the Shabbat window.
+Add the current week's Parashat HaShavua (weekly Torah portion) to Row 5 of the main `TimeDisplayView`, computed entirely offline from the Hebrew calendar date. The implementation uses the Maimonides / Dershowitz-Reingold algorithm for Gregorian → Hebrew date conversion, and the KosherJava 17-type parasha schedule table for lookup. Supports Israel vs. Diaspora calendar differences via the existing `TimeConfiguration.region` setting. Special Shabbatot (Arba Parashiyot, Shabbat Shira, etc.) are highlighted in yellow.
+
+**Status**: Implementation complete (Phase 17). Offline validation complete (Phase 18 — all 34 checks pass via `verify-parasha.py`). Simulator validation pending.
 
 ## Technical Context
 
 **Language/Version**: Monkey C (Connect IQ SDK 4.0+)  
-**Primary Dependencies**: Toybox.Position (GPS), Toybox.Time, Toybox.Time.Gregorian, Toybox.Math, Toybox.WatchUi, Toybox.Application, Toybox.Timer  
-**Storage**: `Application.Storage` (persistent location cache); in-memory `CalculationCache` for daily astronomical data  
-**Testing**: Connect IQ Simulator (functional / regression); on-device testing for sensor + battery behavior  
-**Target Platform**: Garmin watches with Connect IQ 3.0+ and always-on display capability (Forerunner 965, Venu series, fenix series, epix series)  
-**Project Type**: Watch app (Monkey C — single-file `.iq` distributed via Connect IQ Store)  
-**Performance Goals**: All astronomical calculations complete within 500ms (SC-004); display updates within 1s of clock tick (SC-001)  
-**Constraints**: No JVM / no external libraries; limited IEEE 754 float precision (32-bit on most CIQ devices); offline operation required after first GPS fix; 25+ hour battery endurance target  
-**Scale/Scope**: Single-user, single-device app; ~30 Monkey C source files across `src/`, `resources/`
+**Primary Dependencies**: `Toybox.WatchUi`, `Toybox.Time.Gregorian`, `Toybox.Lang`  
+**Storage**: No persistent storage required — parasha is computed on-device from the system clock  
+**Testing**: Connect IQ Simulator (manual) + Python offline validator (`specs/003-shabbat-time-display/validation/verify-parasha.py`)  
+**Target Platform**: Garmin Connect IQ devices (CIQ 3.0+, always-on display)  
+**Project Type**: Watch face / watch app (Garmin CIQ)  
+**Performance Goals**: Parasha lookup < 1ms (cached per Hebrew week); Hebrew calendar math runs once at cache miss  
+**Constraints**: No network calls; all computation from device clock; `Lang.Long` required for Julian Day arithmetic to prevent 32-bit overflow  
+**Scale/Scope**: Single-watch display; 54 standard + 7 combined + 9 special Shabbat parashiyot; 17 Hebrew year-type schedule rows (KosherJava port)
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design.*
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| I — Shabbat Compliance First | ✅ PASS | Parasha is display-only, calendar-only; zero sensor activation |
+| II — Always-On Display | ✅ PASS | Row 5 shown passively; no additional redraw cycles beyond existing timer |
+| III — Minimal Sensor Footprint | ✅ PASS | No GPS, no network, no new sensors for parasha lookup |
+| IV — Zero Interaction During Shabbat | ✅ PASS | Parasha updates weekly at cache miss; no user action required |
+| V — Simplicity and Reliability | ✅ PASS | Offline algorithm; falls back to "--" gracefully on any error; no added state |
 
-| Principle | Requirement | Compliance |
-|-----------|------------|------------|
-| I — Shabbat Compliance First | Every decision must prioritize Shabbat observance | ✅ Candle-lighting and end-of-Shabbat calculations are halachically correct; battery conservation mode reduces melacha activity |
-| II — Always-On Display | Screen must never sleep or dim | ✅ `MainView` holds a `Toybox.Timer` that prevents sleep; display stays on throughout Shabbat window |
-| III — Minimal Sensor Footprint | Disable sensors during Shabbat where possible | ✅ `BatteryConservationService` extends GPS poll interval to 30 min during Shabbat; pre-calculated times cached so GPS is unnecessary once acquired |
-| IV — Zero Interaction During Shabbat | No user prompts or interaction needed after activation | ✅ All time calculations are automatic; no button presses required during Shabbat window |
-| V — Simplicity and Reliability | Minimal code paths, no network calls during Shabbat | ✅ NOAA algorithm is pure math (no network); location cached for 24h; graceful polar-region fallback |
-
-**Gate result**: ✅ PASS — All constitutional principles satisfied. No violations requiring justification.
+**No violations.** Feature justified under Principle I (religious observance context) and Principle V (reliable offline calendar math).
 
 ## Project Structure
 
@@ -40,125 +40,151 @@ Implement a comprehensive time-display system for the ShabbatMode Garmin watch a
 ```text
 specs/003-shabbat-time-display/
 ├── plan.md              # This file
-├── research.md          # Phase 0: KosherJava algorithm mapping & decisions
-├── data-model.md        # Phase 1: Entity definitions and relationships
-├── quickstart.md        # Phase 1: Developer setup guide
-└── tasks.md             # Phase 2: Implementation tasks (all complete)
+├── research.md          # KosherJava algorithm mapping, §8 and §10
+├── data-model.md        # Entities including HebrewCalendarService, ParashaService
+├── quickstart.md        # Developer setup and simulator testing guide
+├── tasks.md             # Phases 9–18 (T071–T120)
+└── validation/
+    └── verify-parasha.py  # Offline Python validator — T112–T120
 ```
 
 ### Source Code (repository root)
 
 ```text
 src/
-├── cache/
-│   ├── CalculationCache.mc       # Daily astronomical data cache (dayId-keyed)
-│   └── LocationCache.mc          # Persistent GPS coordinate storage
-├── lib/
-│   ├── calculations/
-│   │   └── DateMath.mc           # J2000.0 day numbers, epoch conversions
-│   ├── formatters/
-│   │   └── TimeFormatter.mc      # HH:MM / 12h/24h formatting
-│   ├── logging/
-│   │   └── Logger.mc             # Debug logging wrapper
-│   ├── storage/
-│   │   └── StorageManager.mc     # Application.Storage abstraction
-│   ├── validation/
-│   │   └── Validator.mc          # Generic validation utilities
-│   └── validators/
-│       └── LocationValidator.mc  # GPS coordinate + polar-region check
-├── models/
-│   ├── Application.mc            # App-level state model
-│   ├── AstronomicalData.mc       # Sunrise / sunset seconds-since-midnight
-│   ├── Configuration.mc          # App-wide config
-│   ├── Location.mc               # lat/lon/elevation
-│   ├── ShabbatTimes.mc           # Candle lighting + end-of-Shabbat times
-│   ├── TimeConfiguration.mc      # Configurable offsets (candle, tzais)
-│   └── TimeInfo.mc               # Current local time (HH:MM:SS)
 ├── services/
-│   ├── AstronomicalService.mc    # Sunrise/sunset computation + daily cache
-│   ├── BatteryConservationService.mc  # Shabbat activity reduction manager
-│   ├── ConfigService.mc          # Reads/writes TimeConfiguration
-│   ├── LocationService.mc        # GPS acquisition + caching
-│   ├── ShabbatTimeService.mc     # Candle lighting + end-of-Shabbat times
-│   ├── ShabbatWindowService.mc   # Detects Shabbat period (Fri→Sat)
-│   ├── SunCalculator.mc          # NOAA solar algorithm (core math)
-│   ├── TimeService.mc            # Real-time clock ticker (1s or 30s)
-│   └── TimezoneService.mc        # UTC offset derivation
-└── ui/
-    ├── components/
-    │   ├── BaseComponent.mc
-    │   ├── ClockComponent.mc     # Current time display
-    │   ├── ShabbatTimesComponent.mc  # Candle + havdalah times
-    │   └── SunTimesComponent.mc  # Sunrise / sunset times
-    ├── MainView.mc               # Root view; dispatches to conservation or full display
-    ├── TimeDisplayView.mc        # Full-detail time display (non-Shabbat)
-    └── TimeSettingsView.mc       # User preferences (candle offset, tzais offset)
+│   ├── HebrewCalendarService.mc   # Gregorian → Hebrew date (Maimonides algorithm)
+│   ├── ParashaService.mc          # Hebrew date → Parasha index (KosherJava 17-type table)
+│   └── ...
+├── ui/
+│   └── TimeDisplayView.mc         # Row 5: _drawParasha() — Parasha: <name>
+└── ...
 
 resources/
-├── layouts/
-│   ├── time_display_layout.xml
-│   └── time_settings_layout.xml
 └── strings/
-    ├── shabbat_strings.xml       # Shabbat-domain + settings strings
-    ├── strings.xml               # General app strings
-    └── time_strings.xml          # Time-display labels and status messages
+    └── parasha_strings.xml        # 54 single + 7 combined + 9 special Shabbat strings
+                                   # + ParashaLabel, ParashaUnavailable
 ```
 
-**Structure Decision**: Single-project layout matching the existing `src/` tree established in feature 001-base-application. No monorepo split needed for a single-device watch app.
+**Structure Decision**: Single-project Garmin CIQ structure. Parasha logic is a service layer (`src/services/`) consumed by the UI layer (`src/ui/`), consistent with existing `AstronomicalService` + `ShabbatTimeService` patterns.
+
+## Phase 0: Research
+
+All unknowns resolved. See [`research.md`](research.md) §8 (No Hebrew calendar library in CIQ) and §10 (Hebrew Calendar & Parasha Algorithm).
+
+**Key decisions:**
+- **Algorithm**: Maimonides molad-based calendar (Dershowitz-Reingold) — same as KosherJava. Integer arithmetic throughout; `Lang.Long` for JDN values.
+- **Schedule table**: KosherJava 17-type `parshalist` ported verbatim to Monkey C. 17 rows cover all combinations of leap/non-leap × year length (deficient/regular/complete) × Israel/Diaspora.
+- **Epoch**: Hebrew epoch JDN = 347,997 (not 347,996 — matching KosherJava `JEWISH_EPOCH`). `MOLAD_TOHU` = 31,524 chalakim (1d 5h 204p from Sunday, matching `CHALAKIM_MOLAD_TOHU`).
+- **Israel/Diaspora**: Consult separate year-type table rows (12–16) when `TimeConfiguration.getRegion().equals("israel")`.
+- **Caching**: Week ID (`DateMath.todayDayId() / 7`) used as cache key; recompute at week boundary only.
+- **Offline validation**: Python mirror of both `HebrewCalendarService` and `ParashaService` algorithms confirms all test cases before simulator testing.
+
+See [`validation/verify-parasha.py`](validation/verify-parasha.py) for all 34 test cases (T112–T120) — all pass.
+
+## Phase 1: Design & Implementation
+
+### Data Model
+
+See [`data-model.md`](data-model.md) for full entity definitions. Key additions for US5:
+
+| Entity | Location | Role |
+|--------|----------|------|
+| `HebrewCalendarService` | `src/services/HebrewCalendarService.mc` | Static utility: Gregorian → JDN → Hebrew year/month/day. All methods static; `Lang.Long` arithmetic throughout. |
+| `ParashaService` | `src/services/ParashaService.mc` | Instance: Hebrew date → parasha index → display string. Caches by week ID + Israel flag. 17-row KosherJava schedule table. |
+| `TimeConfiguration.region` | `src/models/TimeConfiguration.mc` | Existing field; `"israel"` / `"diaspora"` toggle. |
+
+### Interface Contracts
+
+No external interfaces. This is a watch face; all data flows from device clock → service layer → display.
+
+### Key Design Choices
+
+**Row layout compression (T107)**:  
+Previous layout used 9ths; 6 rows now use 10ths:
+```
+Row 0: h/10       (mode label / GPS status)
+Row 1: h*3/10     (current time HH:MM — large)
+Row 2: h*5/10     (sunrise ↑ / sunset ↓)
+Row 3: h*68/100   (candle lighting)
+Row 4: h*80/100   (end of Shabbat / Havdalah)
+Row 5: h*91/100   (Parashat HaShavua — FONT_TINY)
+```
+At 240×240: Row 4 = 192 px, Row 5 = 218 px, gap = 26 px (FONT_TINY ≈ 12–14 px tall — no overlap).
+
+**Special Shabbat highlighting (T107/ParashaService)**:  
+When `getSpecialShabbosIndex()` returns 200–208, Row 5 renders in `COLOR_YELLOW`; otherwise `COLOR_LT_GRAY`. Special name appended in parentheses, e.g. `"Tetzaveh (Zachor)"`.
+
+**Error handling**:  
+Any exception in `_drawParasha()` leaves Row 5 blank — no crash, no "--" cluttering the display when truly unavailable.
 
 ## Triage Framework: [SYNC] vs [ASYNC] Classification
 
-**Execution Strategy**: Hybrid model — complex halachic calculation logic and UI wiring are [SYNC]; boilerplate models, resource files, and well-defined formatters are [ASYNC].
-
-### Preliminary Task Classification
-
-| Task Category | Estimated [SYNC] Tasks | Estimated [ASYNC] Tasks | Rationale |
-|---------------|----------------------|----------------------|-----------|
-| Astronomical Calculations | 3 | 2 | NOAA algorithm port is risk-critical; caching and utility helpers are well-defined |
-| Shabbat Time Logic | 4 | 1 | Halachic correctness requires human judgment; model scaffold is boilerplate |
-| UI Components | 3 | 2 | Conservation-mode rendering and MainView wiring need architectural care |
-| Location Services | 2 | 2 | GPS acquisition patterns and fallback are tricky; validators are formulaic |
-| Resources / Strings | 0 | 5 | XML resource files are mechanical; no business logic |
-| Battery Conservation | 2 | 1 | Timer interval tuning and state machine are risk-critical |
-
-### Triage Decision Criteria Applied
-
-**High-Risk [SYNC] Classifications:**
-- `SunCalculator.mc` — NOAA algorithm port; floating-point precision at Garmin SDK level; accuracy requirement ±2 min
-- `AstronomicalService.mc` — day-boundary cache invalidation and UTC→local-time conversion
-- `ShabbatWindowService.mc` — Shabbat period detection (Friday nightfall → Saturday nightfall); halachic correctness
-- `ShabbatTimeService.mc` — candle lighting and tzais offsets; configurable defaults with halachic justification
-- `BatteryConservationService.mc` — Shabbat transition state machine; SC-005/SC-006 compliance
-- `MainView.mc` (conservation mode rendering) — timer restart after Shabbat transitions
-- String resource extraction (T064–T070) — touches all UI files; regression risk
-
-**Agent-Delegated [ASYNC] Classifications:**
-- Model scaffolds (`AstronomicalData.mc`, `ShabbatTimes.mc`, `Location.mc`, `TimeInfo.mc`)
-- Utility classes (`DateMath.mc`, `TimeFormatter.mc`, `LocationValidator.mc`)
-- Resource XML files (layouts, strings)
-- `CalculationCache.mc` — straightforward key-value cache
-- `LocationCache.mc` — thin `Application.Storage` wrapper
+| Task Category | [SYNC] Tasks | [ASYNC] Tasks | Rationale |
+|---------------|-------------|--------------|-----------|
+| Business Logic | 6 (T104–T107, T112–T119) | 0 | Calendar math and halachic correctness require human review |
+| Data Operations | 0 | 0 | No persistent storage |
+| UI Components | 1 (T107) | 1 (T120) | Layout math is deterministic; rendering needs human review |
+| String Resources | 0 | 3 (T106, T108, T110) | Mechanical XML generation |
+| Documentation | 0 | 3 (T109, T111) | Docs/spec updates are non-critical |
 
 ### Triage Audit Trail
 
 | Task | Classification | Primary Criteria | Risk Level | Rationale |
 |------|----------------|------------------|------------|-----------|
-| SunCalculator NOAA port | [SYNC] | Complex algorithm, accuracy-critical | High | ±2 min accuracy is a hard requirement; algorithm has known edge cases at extreme latitudes |
-| AstronomicalService caching | [SYNC] | Day-boundary logic, UTC conversion | Med | Daylight saving transitions and midnight-crossing require careful offset handling |
-| ShabbatWindowService | [SYNC] | Halachic logic, state machine | High | Incorrect Shabbat window detection would cause wrong battery mode activation |
-| ShabbatTimeService offsets | [SYNC] | Halachic correctness, configurable defaults | High | Default tzais offset (42 min vs 25 min) is a religious decision with practical consequences |
-| BatteryConservationService | [SYNC] | State machine, real device testing required | High | Timer-based Shabbat transitions must not silently fail overnight |
-| MainView conservation mode | [SYNC] | UI wiring + timer restart on transitions | Med | Incorrect timer restart frequency would violate SC-005 (≥80% refresh reduction) |
-| String extraction (T064–T070) | [SYNC] | Multi-file refactor, regression risk | Med | Touches all UI files; hardcoded strings must not remain in any .mc file |
-| AstronomicalData model | [ASYNC] | Boilerplate data container | Low | Plain struct with getters; no business logic |
-| ShabbatTimes model | [ASYNC] | Simple calculation wrapper | Low | Arithmetic on sunset offsets; predictable |
-| TimeFormatter | [ASYNC] | Standard string formatting | Low | HH:MM formatting is straightforward |
-| LocationValidator | [ASYNC] | Formulaic polar check (|lat| > 66.5) | Low | Single boolean check |
-| Resource XML files | [ASYNC] | No business logic | Low | Mechanical key-value files |
-| CalculationCache | [ASYNC] | Simple dictionary | Low | Map with dayId key; no complex invalidation |
+| T104 — HebrewCalendarService | SYNC | Complex algorithm, halachic correctness | High | Molad arithmetic, dehiyyot postponement rules — off-by-one in epoch = wrong year for all users |
+| T105 — ParashaService | SYNC | Algorithm, 17-type schedule port | High | Incorrect year-type mapping = wrong parasha every week |
+| T106 — parasha_strings.xml | ASYNC | Mechanical string resource creation | Low | 54+7+9 string IDs, no logic |
+| T107 — TimeDisplayView Row 5 | SYNC | UI layout, service wiring | Medium | Row layout compression affects all 5 existing rows |
+| T108 — Region strings | ASYNC | Mechanical string resource | Low | 3 string IDs |
+| T109 — TimeSettingsView toggle | ASYNC | Standard CIQ settings pattern | Low | Follows existing tzais-method toggle pattern exactly |
+| T110 — spec.md update | ASYNC | Documentation | Low | No code impact |
+| T111 — research.md update | ASYNC | Documentation | Low | No code impact |
+| T112–T119 — Validation | SYNC | Halachic correctness verification | High | Must confirm correct parasha against authoritative sources |
+| T120 — UI layout validation | ASYNC | Mechanical pixel math | Low | Row positions verified analytically |
 
 ## Complexity Tracking
 
-> No constitutional violations requiring justification were identified.
+No constitution violations requiring justification.
 
-All design decisions are within the constitutional bounds. The degree-based tzais calculation (KosherJava `getTzaisGeonim8Point5Degrees()` / `getTzaisGeonim7Point083Degrees()`) was deferred from the initial implementation but **is implemented** in Phase 10 (T076–T082) — see `research.md` § "Tzais Calculation Method" and `tasks.md` Phase 10. Fixed-minute offsets (default 42 min, Rabbeinu Tam) remain the default; degree-based selection is an optional user preference accessible only outside Shabbat, preserving Principle IV (Zero Interaction During Shabbat) and Principle V (Simplicity).
+## Implementation Status
+
+### Completed
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Phase 17 — Core Implementation | T104–T111 | ✅ Complete |
+| Phase 18a — Hebrew Calendar Validation | T112–T113 | ✅ Validated offline (verify-parasha.py) |
+| Phase 18b — Parasha Calculation Correctness | T114–T117 | ✅ Validated offline |
+| Phase 18c — Special Shabbatot Detection | T118–T119 | ✅ Validated offline |
+| Phase 18d — UI Layout Verification | T120 | ✅ Validated offline (row math) |
+
+**Bug fixed in this branch**: `HebrewCalendarService.mc`  
+- `HEBREW_EPOCH_JD`: 347,996 → 347,997 (correct KosherJava epoch)  
+- `MOLAD_TOHU`: 57,444 → 31,524 (correct KosherJava `CHALAKIM_MOLAD_TOHU`)  
+- `julianDayFromGregorian()`: replaced non-standard formula with Calendar FAQ standard algorithm
+
+### Remaining
+
+| Task | Description | Blocker? |
+|------|-------------|----------|
+| Connect IQ Simulator tests (T112–T119) | Visual confirmation of Row 5 in simulator | No (offline validation passes; simulator is belt-and-suspenders) |
+
+## Validation Evidence
+
+All 34 offline test cases from `verify-parasha.py` pass:
+
+```
+T112 — Hebrew calendar date conversion (3 dates × 3 fields = 9 checks) ✅
+T113 — Rosh Hashana day-of-week for 5784, 5785, 5786               ✅
+T114 — Shemini (Apr 11 2026, both Israel and Diaspora)             ✅
+        + Tazria-Metzora (Apr 18 2026, Diaspora)                   ✅
+T115 — Israel/Diaspora split: Nasso vs Beha'alotecha (May 30 2026) ✅
+T116 — Yom Tov fallback: "--" for Shabbat Chol HaMoed Pesach      ✅
+T117 — Leap year: Tazria and Metzora separate in 5784              ✅
+T118 — Shabbat Zachor: sidx=201, regular=Tetzaveh (Feb 28 2026)   ✅
+T119 — Shabbat Shira: sidx=208, parasha=Beshalach (Jan 31 2026)   ✅
+T120 — Row layout math: Row4=192px, Row5=218px, gap=26px           ✅
+```
+
+Run: `python3 specs/003-shabbat-time-display/validation/verify-parasha.py`

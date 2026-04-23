@@ -13,18 +13,19 @@ using Toybox.Time.Gregorian;
 // JewishCalendar implementation.
 class HebrewCalendarService {
 
-    // Hebrew epoch: Julian Day of 1 Tishrei 1 AM = JD 347,996
-    // (Gregorian proleptic: Monday, 7 Oct 3761 BCE)
-    private static const HEBREW_EPOCH_JD = 347996l;
+    // Hebrew epoch: Julian Day of 1 Tishrei 1 AM = JDN 347,997
+    // (Gregorian proleptic: 5 September 3761 BCE)
+    // Consistent with KosherJava JEWISH_EPOCH = -1373429 (R.D.) + JDN(Jan 1, 1CE).
+    private static const HEBREW_EPOCH_JD = 347997l;
 
     // Seconds in a halak (smallest Talmudic time unit): 1 hour / 1080
     private static const CHALAKIM_PER_HOUR = 1080l;
     private static const CHALAKIM_PER_DAY  = 25920l;   // 24 * 1080
 
-    // Molad Tohu: reference new moon — 2d 5h 204 chalakim
-    // expressed as chalakim from epoch start of Sunday 0h:
-    //   2 days * 25920 + 5 * 1080 + 204 = 51840 + 5400 + 204 = 57444
-    private static const MOLAD_TOHU = 57444l;
+    // Molad Tohu: reference new moon — 1d 5h 204 chalakim from the start of Sunday.
+    // Matches KosherJava CHALAKIM_MOLAD_TOHU = 31524.
+    //   1 day * 25920 + 5 * 1080 + 204 = 25920 + 5400 + 204 = 31524
+    private static const MOLAD_TOHU = 31524l;
 
     // Average month length in chalakim: 29d 12h 793 chalakim
     //   = 29*25920 + 12*1080 + 793 = 765433
@@ -98,18 +99,22 @@ class HebrewCalendarService {
         return 3;                   // 355 or 385
     }
 
-    // Convert a proleptic Gregorian date to a Julian Day Number.
-    // Returns a Long.
+    // Convert a proleptic Gregorian date to a Julian Day Number (JDN).
+    //
+    // Standard Gregorian→JDN algorithm (Calendar FAQ, Claus Tøndering):
+    //   a = (14 − month) / 12
+    //   y = year + 4800 − a
+    //   m = month + 12·a − 3
+    //   JDN = day + (153·m + 2)/5 + 365·y + y/4 − y/100 + y/400 − 32045
+    //
+    // Using Lang.Long throughout to avoid 32-bit overflow; current JD ≈ 2.46 M.
+    // Reference epoch: JDN 347996 = 5 September 3761 BCE (proleptic Gregorian) = 1 Tishrei 1 AM.
     static function julianDayFromGregorian(year as Lang.Number, month as Lang.Number, day as Lang.Number) as Lang.Long {
-        var y = year as Lang.Long;
-        var m = month as Lang.Long;
-        var d = day as Lang.Long;
-        if (m <= 2l) {
-            y = y - 1l;
-            m = m + 12l;
-        }
-        var a = y / 4l - y / 100l + y / 400l;
-        return 365l * y + a + (153l * m + 8l) / 5l + d - 32045l;
+        var a = (14l - month) / 12l;
+        var y = (year as Lang.Long) + 4800l - a;
+        var m = (month as Lang.Long) + 12l * a - 3l;
+        var A = y / 400l - y / 100l + y / 4l;
+        return 365l * y + A + (153l * m + 2l) / 5l + (day as Lang.Long) - 32045l;
     }
 
     // Hebrew year that contains the given Gregorian date.
@@ -145,6 +150,72 @@ class HebrewCalendarService {
         return hebrewDayOfYear(now.year, now.month, now.day);
     }
 
+    // True when Cheshvan has 30 days (year is "complete": 355 or 385 days).
+    static function isCheshvanLong(year as Lang.Number) as Lang.Boolean {
+        return daysInHebrewYear(year) % 10 == 5;
+    }
+
+    // True when Kislev has 29 days (year is "deficient": 353 or 383 days).
+    static function isKislevShort(year as Lang.Number) as Lang.Boolean {
+        return daysInHebrewYear(year) % 10 == 3;
+    }
+
+    // Day of week that 1 Tishrei (Rosh Hashana) falls on for the given year.
+    // Returns a value in Java Calendar scale: 2=Mon, 3=Tue, 5=Thu, 7=Sat.
+    // (Rosh Hashana is always Mon, Tue, Thu, or Sat per the dehiyyot rules.)
+    // Matches KosherJava JewishCalendar.getParshaYearType() computation:
+    //   (getJewishCalendarElapsedDays(year) + 1) % 7, with 0 → 7 for Shabbat.
+    static function roshHashanaDayOfWeek(year as Lang.Number) as Lang.Number {
+        var dow = ((elapsedDaysHebrewYear(year) + 1l) % 7l) as Lang.Number;
+        if (dow == 0) { dow = 7; }
+        return dow;
+    }
+
+    // Month number (1 = Tishrei) that contains the given day-of-year within
+    // the Hebrew year.  In a leap year there are 13 months; in a regular year 12.
+    static function hebrewMonthForDayOfYear(year as Lang.Number, dayOfYear as Lang.Number) as Lang.Number {
+        var lengths = _monthLengths(year);
+        var numMonths = isHebrewLeapYear(year) ? 13 : 12;
+        var cum = 0;
+        for (var m = 0; m < numMonths; m++) {
+            cum += lengths[m];
+            if (dayOfYear <= cum) {
+                return m + 1;
+            }
+        }
+        return numMonths;
+    }
+
+    // Day within the Hebrew month (1-based) for the given day-of-year.
+    static function hebrewDayOfMonthForDayOfYear(year as Lang.Number, dayOfYear as Lang.Number) as Lang.Number {
+        var lengths = _monthLengths(year);
+        var numMonths = isHebrewLeapYear(year) ? 13 : 12;
+        var cum = 0;
+        for (var m = 0; m < numMonths; m++) {
+            cum += lengths[m];
+            if (dayOfYear <= cum) {
+                return dayOfYear - (cum - lengths[m]);
+            }
+        }
+        return dayOfYear;
+    }
+
+    // Today's Hebrew month (1 = Tishrei), derived from device clock.
+    static function todayHebrewMonth() as Lang.Number {
+        var now  = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+        var year = gregorianToHebrewYear(now.year, now.month, now.day);
+        var doy  = hebrewDayOfYear(now.year, now.month, now.day);
+        return hebrewMonthForDayOfYear(year, doy);
+    }
+
+    // Today's Hebrew day-of-month (1-based), derived from device clock.
+    static function todayHebrewDay() as Lang.Number {
+        var now  = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+        var year = gregorianToHebrewYear(now.year, now.month, now.day);
+        var doy  = hebrewDayOfYear(now.year, now.month, now.day);
+        return hebrewDayOfMonthForDayOfYear(year, doy);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -159,5 +230,50 @@ class HebrewCalendarService {
         // Add leap months for years within the partial cycle
         months = months + ((7l * (remainder as Lang.Long) + 1l) / 19l);
         return months;
+    }
+
+    // Returns an array of month lengths (in days) for the given Hebrew year,
+    // indexed 0-based from Tishrei.  Leap years have 13 entries, regular 12.
+    // Month order from Tishrei:
+    //   1=Tishrei, 2=Cheshvan, 3=Kislev, 4=Tevet, 5=Shevat,
+    //   6=Adar (non-leap) / Adar-I (leap),
+    //   7=Nissan (non-leap) / Adar-II (leap),
+    //   8=Iyar (non-leap) / Nissan (leap),
+    //   9..12/13 continue alternating 30/29.
+    private static function _monthLengths(year as Lang.Number) as Lang.Array<Lang.Number> {
+        var isLeap = isHebrewLeapYear(year);
+        var chLong = isCheshvanLong(year);
+        var kiShort = isKislevShort(year);
+        if (isLeap) {
+            return [
+                30,              // 1  Tishrei
+                chLong ? 30 : 29, // 2  Cheshvan
+                kiShort ? 29 : 30, // 3  Kislev
+                29,              // 4  Tevet
+                30,              // 5  Shevat
+                30,              // 6  Adar I
+                29,              // 7  Adar II
+                30,              // 8  Nissan
+                29,              // 9  Iyar
+                30,              // 10 Sivan
+                29,              // 11 Tammuz
+                30,              // 12 Av
+                29               // 13 Elul
+            ] as Lang.Array<Lang.Number>;
+        }
+        return [
+            30,              // 1  Tishrei
+            chLong ? 30 : 29, // 2  Cheshvan
+            kiShort ? 29 : 30, // 3  Kislev
+            29,              // 4  Tevet
+            30,              // 5  Shevat
+            29,              // 6  Adar
+            30,              // 7  Nissan
+            29,              // 8  Iyar
+            30,              // 9  Sivan
+            29,              // 10 Tammuz
+            30,              // 11 Av
+            29               // 12 Elul
+        ] as Lang.Array<Lang.Number>;
     }
 }
